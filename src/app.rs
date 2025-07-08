@@ -6,7 +6,6 @@ use crate::{
 };
 use egui::ThemePreference;
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GalagoApp {
@@ -24,21 +23,22 @@ pub struct GalagoApp {
     grid: Grid,
 
     svg_render: SvgRender,
+    should_reset_view: bool,
 }
+
+const BASE_SVG: &str = include_str!("../assets/galago.svg");
 
 impl Default for GalagoApp {
     fn default() -> Self {
-        let base_svg = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="40" fill="red" />
-</svg>"#;
         Self {
-            svg: base_svg.to_owned(),
+            svg: BASE_SVG.to_owned(),
             scene_rect: egui::Rect::NAN,
             settings: Settings::new(),
             tree_viewer: TreeViewer::new(),
             string_viewer: StringViewer::new(),
             grid: Grid::default(),
             svg_render: SvgRender::new(),
+            should_reset_view: false,
         }
     }
 }
@@ -71,12 +71,8 @@ impl eframe::App for GalagoApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-
             egui::menu::bar(ui, |ui| {
-                // NOTE: no File->Quit on web pages!
                 ui.menu_button("File", |ui| {
                     let is_web = cfg!(target_arch = "wasm32");
                     if !is_web && ui.button("Quit").clicked() {
@@ -111,9 +107,10 @@ impl eframe::App for GalagoApp {
                         )
                         .open_in_new_tab(true),
                     );
-                    egui::               warn_if_debug_build(ui);
+                    egui::warn_if_debug_build(ui);
                 });
-                ui.add_space(16.0);
+                ui.separator();
+                self.should_reset_view = ui.button("Double click to Reset view").clicked();
             });
         });
 
@@ -122,15 +119,10 @@ impl eframe::App for GalagoApp {
             Err(_) => egui::Color32::RED,
         };
 
-        let scene = egui::Scene::new()
-            .max_inner_size([350.0, 1000.0])
-            .zoom_range(0.1..=4.0);
         if self.settings.string_viewer.is_windows {
             Window::new(self.string_viewer.title())
                 .min_width(500.0)
                 .min_height(100.0)
-                .max_height(500.0)
-                .max_width(500.0)
                 .resizable(true)
                 .show(ctx, |ui| {
                     self.string_viewer.show(ui, &mut self.svg, color);
@@ -164,9 +156,10 @@ impl eframe::App for GalagoApp {
                 });
         }
         egui::CentralPanel::default().show(ctx, |parent_ui| {
-            let reset_view = parent_ui.button("Double click to Reset view").clicked();
             let rect = parent_ui.available_rect_before_wrap();
-            let response = scene
+            let response = egui::Scene::new()
+                .max_inner_size([350.0, 1000.0])
+                .zoom_range(0.1..=4.0)
                 .show(parent_ui, &mut self.scene_rect, |ui| {
                     let painter = ui.painter();
                     let bg_r: egui::Response = ui.response();
@@ -180,7 +173,7 @@ impl eframe::App for GalagoApp {
                 })
                 .response;
 
-            if reset_view || response.double_clicked() {
+            if self.should_reset_view || response.double_clicked() {
                 let real_rect = Rect::from_two_pos(Pos2::ZERO, (rect.max - rect.min).to_pos2());
                 self.scene_rect = real_rect;
             }

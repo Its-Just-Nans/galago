@@ -1,3 +1,5 @@
+//! Galago app
+
 use egui::{Pos2, Rect, Window};
 
 use crate::{
@@ -6,23 +8,33 @@ use crate::{
 };
 use egui::ThemePreference;
 
+/// GalagoApp struct
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GalagoApp {
+    /// SVG Screen
     svg: String,
 
-    #[serde(skip)] // This how you opt-out of serialization of a field
+    /// Current scene zoom
+    #[serde(skip)]
     scene_rect: egui::Rect,
 
+    /// Settings Ui
     settings: Settings,
 
+    /// TreeViewer Ui
     tree_viewer: TreeViewer,
 
+    /// StringViewer Ui
     string_viewer: StringViewer,
 
+    /// Grid options
     grid: Grid,
 
+    /// SvgRender
     svg_render: SvgRender,
+
+    /// should reset the view
     should_reset_view: bool,
 }
 
@@ -58,8 +70,9 @@ impl GalagoApp {
         Default::default()
     }
 
+    /// Check if the sidebar is needed
     fn is_sidebar(&self) -> bool {
-        !self.settings.tree_settings.is_windows || !self.settings.string_viewer.is_windows
+        !self.tree_viewer.is_windows || !self.string_viewer.is_windows
     }
 }
 
@@ -119,7 +132,7 @@ impl eframe::App for GalagoApp {
             Err(_) => egui::Color32::RED,
         };
 
-        if self.settings.string_viewer.is_windows {
+        if self.string_viewer.is_windows {
             Window::new(self.string_viewer.title())
                 .min_width(500.0)
                 .min_height(100.0)
@@ -128,38 +141,39 @@ impl eframe::App for GalagoApp {
                     self.string_viewer.show(ui, &mut self.svg, color);
                 });
         }
-        if self.settings.tree_settings.is_windows {
+        if self.tree_viewer.is_windows {
             Window::new(self.tree_viewer.title())
                 .resizable(true)
                 .min_width(500.0)
                 .min_height(100.0)
                 .show(ctx, |ui| {
-                    self.tree_viewer
-                        .show(ui, &mut self.svg, &self.settings.tree_settings);
+                    self.tree_viewer.show(ui, &mut self.svg);
                 });
         }
         if self.is_sidebar() {
             egui::panel::SidePanel::right("conf_panel")
                 .min_width(200.0)
-                .max_width(500.0)
-                .show(ctx, |ui| {
-                    if !self.settings.string_viewer.is_windows {
-                        self.string_viewer.show(ui, &mut self.svg, color);
-                    }
-                    if !self.settings.tree_settings.is_windows {
-                        if !self.settings.string_viewer.is_windows {
-                            ui.separator();
-                        }
-                        self.tree_viewer
-                            .show(ui, &mut self.svg, &self.settings.tree_settings);
-                    }
+                .show(ctx, |ui_sidebar| {
+                    egui::ScrollArea::vertical()
+                        .id_salt("right_sidebar")
+                        .show(ui_sidebar, |ui| {
+                            if !self.string_viewer.is_windows {
+                                self.string_viewer.show(ui, &mut self.svg, color);
+                            }
+                            if !self.tree_viewer.is_windows {
+                                if !self.string_viewer.is_windows {
+                                    ui.separator();
+                                }
+                                self.tree_viewer.show(ui, &mut self.svg);
+                            }
+                        });
                 });
         }
         egui::CentralPanel::default().show(ctx, |parent_ui| {
             let rect = parent_ui.available_rect_before_wrap();
             let response = egui::Scene::new()
                 .max_inner_size([350.0, 1000.0])
-                .zoom_range(0.1..=4.0)
+                .zoom_range(0.1..=50.0)
                 .show(parent_ui, &mut self.scene_rect, |ui| {
                     let painter = ui.painter();
                     let bg_r: egui::Response = ui.response();
@@ -178,6 +192,43 @@ impl eframe::App for GalagoApp {
                 self.scene_rect = real_rect;
             }
         });
-        self.settings.show(ctx);
+        self.settings.show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label(format!("{} settings", self.svg_render.title()));
+                if ui.button("⟳").clicked() {
+                    self.svg_render = SvgRender::new();
+                }
+            });
+            self.svg_render.show_settings(ui);
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{} settings", self.tree_viewer.title()));
+                ui.button("⟳").clicked().then(|| {
+                    self.tree_viewer = TreeViewer::new();
+                });
+            });
+            self.tree_viewer.show_settings(ui);
+
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{} settings", self.string_viewer.title()));
+                ui.button("⟳").clicked().then(|| {
+                    self.string_viewer = StringViewer::new();
+                });
+            });
+            self.string_viewer.show_settings(ui);
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{} settings", self.grid.title()));
+                ui.button("⟳").clicked().then(|| {
+                    self.grid = Grid::default();
+                });
+            });
+            self.grid.show_settings(ui);
+            ui.separator();
+            if ui.button("Default svg").clicked() {
+                self.svg = BASE_SVG.to_owned();
+            }
+        });
     }
 }

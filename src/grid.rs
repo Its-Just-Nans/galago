@@ -1,5 +1,10 @@
+//! Grid
+
+use std::f32::consts::PI;
+
 use egui::{emath::Rot2, vec2, Color32, Painter, Rect, Stroke, Vec2};
 
+/// Grid options
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Grid {
     /// Spacing between grid lines.
@@ -7,9 +12,16 @@ pub struct Grid {
 
     /// Angle of the grid.
     pub angle: f32,
+
+    /// Color of the grid lines.
+    pub color: Color32,
+
+    /// Stroke width of the grid lines.
+    pub stroke_width: f32,
 }
 const DEFAULT_GRID_SPACING: Vec2 = vec2(20.0, 20.0);
 
+/// Gri rotation
 const DEFAULT_GRID_ANGLE: f32 = 0.0;
 
 impl Default for Grid {
@@ -17,19 +29,51 @@ impl Default for Grid {
         Self {
             spacing: DEFAULT_GRID_SPACING,
             angle: DEFAULT_GRID_ANGLE,
+            color: Color32::BLACK,
+            stroke_width: 0.5,
         }
     }
 }
 
 impl Grid {
-    /// Create new grid with given spacing and angle.
-    // #[must_use]
-    // pub const fn new(spacing: Vec2, angle: f32) -> Self {
-    //     Self { spacing, angle }
-    // }&self,
+    /// Tittle
+    pub fn title(&self) -> &'static str {
+        "Grid"
+    }
 
+    /// Grid settings
+    pub fn show_settings(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal(|ui| {
+            ui.label("Spacing:");
+            ui.add(
+                egui::DragValue::new(&mut self.spacing.x)
+                    .speed(0.1)
+                    .range(1.0..=100.0),
+            );
+            ui.add(
+                egui::DragValue::new(&mut self.spacing.y)
+                    .speed(0.1)
+                    .range(1.0..=100.0),
+            );
+        });
+        ui.horizontal(|ui| {
+            ui.label("Angle:");
+
+            ui.add(
+                egui::DragValue::new(&mut self.angle)
+                    .speed(0.01)
+                    .range(-PI..=PI),
+            );
+        });
+        ui.horizontal(|ui| {
+            ui.label("Color:");
+            ui.color_edit_button_srgba(&mut self.color);
+        });
+        ui.add(egui::Slider::new(&mut self.stroke_width, 0.1..=5.0).text("Stroke Width"));
+    }
+    /// draw the grid
     pub fn draw(&self, viewport: &Rect, painter: &Painter) {
-        let bg_stroke = Stroke::new(0.5, Color32::BLACK);
+        let bg_stroke = Stroke::new(self.stroke_width, self.color);
 
         let spacing = vec2(self.spacing.x.max(1.0), self.spacing.y.max(1.0));
 

@@ -1,3 +1,5 @@
+//! Path
+
 use std::fmt;
 
 use svgtypes::{Error, PathParser, PathSegment};
@@ -5,6 +7,7 @@ use svgtypes::{Error, PathParser, PathSegment};
 /// A parsed path data.
 #[derive(Debug)]
 pub struct PathParsed {
+    /// Segments of the path
     segments: Vec<PathSegment>,
 }
 
@@ -89,7 +92,7 @@ impl PathParsed {
     /// ```
     ///
     pub fn path_data_with_separator(&self, separator: &str) -> String {
-        let strings = self.segments.iter().map(|s| to_string(s));
+        let strings = self.segments.iter().map(to_string);
         strings.collect::<Vec<String>>().join(separator)
     }
 
@@ -399,6 +402,7 @@ impl PathParsed {
     }
 }
 
+/// Convert PathSegment to String
 pub fn to_string(path_seg: &PathSegment) -> String {
     match path_seg {
         PathSegment::MoveTo { abs, x, y } => format!("{}{} {}", if *abs { "M" } else { "m" }, x, y),
@@ -464,6 +468,7 @@ pub fn to_string(path_seg: &PathSegment) -> String {
     }
 }
 
+/// is PathSegment Abs
 pub fn is_abs(path_seg: &PathSegment) -> bool {
     match path_seg {
         PathSegment::MoveTo { abs, .. } => *abs,
@@ -479,6 +484,7 @@ pub fn is_abs(path_seg: &PathSegment) -> bool {
     }
 }
 
+/// Get the letter of PathSegment
 pub fn get_letter(path_seg: &PathSegment) -> String {
     match is_abs(path_seg) {
         true => match path_seg {

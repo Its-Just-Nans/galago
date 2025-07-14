@@ -1,12 +1,12 @@
+//! Tree Viewer
+
 use egui::Ui;
 use egui_extras::{Column, TableBuilder};
 use xmltree::Element;
 
-use crate::{
-    path::{get_letter, to_string, PathParsed},
-    settings::TreeViewerSettings,
-};
+use crate::path::{get_letter, to_string, PathParsed};
 
+/// Show the svg groups
 fn show_group(ui: &mut Ui, nodes: &mut [xmltree::XMLNode]) {
     for (idx, node) in nodes.iter_mut().enumerate() {
         match node {
@@ -96,28 +96,42 @@ fn show_group(ui: &mut Ui, nodes: &mut [xmltree::XMLNode]) {
     }
 }
 
+/// TreeViewer Struct
 #[derive(Default, serde::Deserialize, serde::Serialize)]
-pub struct TreeViewer {}
+pub struct TreeViewer {
+    /// is windows mode
+    pub is_windows: bool,
+}
 
 impl TreeViewer {
+    /// Create a new Tree Viewer
     pub fn new() -> Self {
         Default::default()
     }
 
+    /// Tree Viewer title
     pub fn title(&self) -> &'static str {
         "SVG Tree"
     }
 
-    pub fn show(&self, ui: &mut Ui, svg_str: &mut String, _settings: &TreeViewerSettings) {
+    /// Settings
+    pub fn show_settings(&mut self, ui: &mut Ui) {
+        ui.checkbox(&mut self.is_windows, "Tree as windows");
+    }
+
+    /// Show Tree Viewer
+    pub fn show(&self, ui: &mut Ui, svg_str: &mut String) {
         egui::ScrollArea::vertical().id_salt("tree_viewer").show(
             ui,
             |ui| match &mut Element::parse(svg_str.as_bytes()) {
                 Ok(e) => {
                     show_group(ui, &mut e.children);
                     let mut buf = Vec::new();
-                    e.write(&mut buf).unwrap();
-                    let s = String::from_utf8(buf).unwrap();
-                    *svg_str = s;
+                    if e.write(&mut buf).is_ok() {
+                        if let Ok(s) = String::from_utf8(buf) {
+                            *svg_str = s;
+                        }
+                    };
                 }
                 Err(e) => {
                     ui.label(format!("Error: {:?}", e));

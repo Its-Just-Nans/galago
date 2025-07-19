@@ -33,7 +33,7 @@ resvg = "0.45.1"
 svg = "0.18.0"
 svgtypes = "0.15.3"
 xmltree = { version = "0.11.0", features = ["attribute-order"] }
-egui_extras = "0.32.0"
+egui_extras = { version = "0.32", features = ["syntect", "serde"] }
 image = "0.25.6"
 
 # native:

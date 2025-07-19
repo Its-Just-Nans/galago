@@ -14,7 +14,7 @@
 mod app;
 pub use app::GalagoApp;
 mod grid;
-mod path;
+pub mod path;
 mod settings;
 mod string_viewer;
 mod svg_render;

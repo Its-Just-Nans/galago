@@ -85,7 +85,7 @@ impl eframe::App for GalagoApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     let is_web = cfg!(target_arch = "wasm32");
                     if !is_web && ui.button("Quit").clicked() {
@@ -127,10 +127,7 @@ impl eframe::App for GalagoApp {
             });
         });
 
-        let color = match self.svg_render.update(ctx, &self.svg) {
-            Ok(_) => egui::Color32::GRAY,
-            Err(_) => egui::Color32::RED,
-        };
+        let color = self.svg_render.update(ctx, &self.svg).is_ok();
 
         if self.string_viewer.is_windows {
             Window::new(self.string_viewer.title())

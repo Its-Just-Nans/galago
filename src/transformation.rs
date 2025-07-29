@@ -162,7 +162,7 @@ pub fn line_to_path(x1: &str, y1: &str, x2: &str, y2: &str) -> String {
 }
 
 /// Convert a polygon string to an SVG path data string
-pub fn polygone_to_path(points: &str) -> String {
+pub fn polygon_to_path(points: &str) -> String {
     let mut path_data = String::new();
     let mut first = true;
     let all_points = points.split_whitespace().collect::<Vec<&str>>();

@@ -7,7 +7,7 @@ use xmltree::Element;
 use crate::{
     path::SvgPath,
     transformation::{
-        circle_to_path, ellipse_to_path, line_to_path, polygone_to_path, polyline_to_path,
+        circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
         rect_to_path,
     },
 };
@@ -196,7 +196,7 @@ impl TreeViewer {
                                 } else if e == "polygon" && ui.button("Convert to path").clicked() {
                                     // Convert polygon to path logic here
                                     if let Some(points) = g.attributes.get("points") {
-                                        let path_data = polygone_to_path(points);
+                                        let path_data = polygon_to_path(points);
                                         g.name = "path".to_string();
                                         g.attributes.insert("d".to_string(), path_data);
                                         g.attributes.shift_remove("points");

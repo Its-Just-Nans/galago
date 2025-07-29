@@ -2,7 +2,7 @@
 use std::{cmp::max, sync::Arc};
 
 use egui::{
-    Context, Image, ImageData, Sense, TextureHandle, TextureOptions, Ui, load::SizedTexture,
+    load::SizedTexture, Context, Image, ImageData, Sense, TextureHandle, TextureOptions, Ui,
 };
 use resvg::tiny_skia::Pixmap;
 

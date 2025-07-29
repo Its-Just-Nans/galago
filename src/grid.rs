@@ -2,7 +2,7 @@
 
 use std::f32::consts::PI;
 
-use egui::{emath::Rot2, vec2, Color32, Painter, Rect, Stroke, Vec2};
+use egui::{Color32, Painter, Rect, Stroke, Vec2, emath::Rot2, vec2};
 
 /// Grid options
 #[derive(serde::Deserialize, serde::Serialize)]

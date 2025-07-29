@@ -130,25 +130,37 @@ impl eframe::App for GalagoApp {
         let color = self.svg_render.update(ctx, &self.svg).is_ok();
 
         if self.string_viewer.is_windows {
+            let mut current_open = true;
             Window::new(self.string_viewer.title())
                 .min_width(500.0)
                 .min_height(100.0)
+                .open(&mut current_open)
                 .resizable(true)
                 .show(ctx, |ui| {
                     self.string_viewer.show(ui, &mut self.svg, color);
                 });
+            self.string_viewer.is_windows = current_open;
         }
         if self.tree_viewer.is_windows {
+            let mut current_open = true;
+
             Window::new(self.tree_viewer.title())
                 .resizable(true)
                 .min_width(500.0)
                 .min_height(100.0)
+                .open(&mut current_open)
                 .show(ctx, |ui| {
                     self.tree_viewer.show(ui, &mut self.svg);
                 });
+            self.string_viewer.is_windows = current_open;
         }
         if self.is_sidebar() {
             egui::panel::SidePanel::right("conf_panel")
+                .frame(
+                    egui::Frame::central_panel(&ctx.style())
+                        .inner_margin(0)
+                        .outer_margin(0),
+                )
                 .min_width(200.0)
                 .show(ctx, |ui_sidebar| {
                     egui::ScrollArea::vertical()
@@ -166,29 +178,35 @@ impl eframe::App for GalagoApp {
                         });
                 });
         }
-        egui::CentralPanel::default().show(ctx, |parent_ui| {
-            let rect = parent_ui.available_rect_before_wrap();
-            let response = egui::Scene::new()
-                .max_inner_size([350.0, 1000.0])
-                .zoom_range(0.1..=50.0)
-                .show(parent_ui, &mut self.scene_rect, |ui| {
-                    let painter = ui.painter();
-                    let bg_r: egui::Response = ui.response();
-                    if bg_r.rect.is_finite() {
-                        self.grid.draw(&bg_r.rect, painter);
-                    }
-                    let _response = self.svg_render.show(ui);
-                    // if response.clicked() {
-                    //     println!("SVG clicked!");
-                    // }
-                })
-                .response;
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::central_panel(&ctx.style())
+                    .inner_margin(0)
+                    .outer_margin(0),
+            )
+            .show(ctx, |parent_ui| {
+                let rect = parent_ui.available_rect_before_wrap();
+                let response = egui::Scene::new()
+                    .max_inner_size([350.0, 1000.0])
+                    .zoom_range(0.1..=50.0)
+                    .show(parent_ui, &mut self.scene_rect, |ui| {
+                        let painter = ui.painter();
+                        let bg_r: egui::Response = ui.response();
+                        if bg_r.rect.is_finite() {
+                            self.grid.draw(&bg_r.rect, painter);
+                        }
+                        let _response = self.svg_render.show(ui);
+                        // if response.clicked() {
+                        //     println!("SVG clicked!");
+                        // }
+                    })
+                    .response;
 
-            if self.should_reset_view || response.double_clicked() {
-                let real_rect = Rect::from_two_pos(Pos2::ZERO, (rect.max - rect.min).to_pos2());
-                self.scene_rect = real_rect;
-            }
-        });
+                if self.should_reset_view || response.double_clicked() {
+                    let real_rect = Rect::from_two_pos(Pos2::ZERO, (rect.max - rect.min).to_pos2());
+                    self.scene_rect = real_rect;
+                }
+            });
         self.settings.show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(format!("{} settings", self.svg_render.title()));

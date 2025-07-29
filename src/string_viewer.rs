@@ -95,22 +95,24 @@ impl StringViewer {
             layout_job.wrap.max_width = wrap_width;
             ui.fonts(|f| f.layout_job(layout_job))
         };
+        let height = ui.ctx().screen_rect().height();
+        egui::ScrollArea::vertical()
+            .max_height(height / 2.0 - 40.0)
+            .show(ui, |ui| {
+                let multiliner = egui::TextEdit::multiline(svg)
+                    .font(egui::TextStyle::Monospace) // for cursor height
+                    .code_editor()
+                    .desired_rows(10)
+                    .lock_focus(true)
+                    .desired_width(f32::INFINITY);
 
-        egui::ScrollArea::vertical().show(ui, |ui| {
-            let multiliner = egui::TextEdit::multiline(svg)
-                .font(egui::TextStyle::Monospace) // for cursor height
-                .code_editor()
-                .desired_rows(10)
-                .lock_focus(true)
-                .desired_width(f32::INFINITY);
-
-            if is_correct {
-                ui.add(multiliner.layouter(&mut layouter));
-            } else {
-                ui.add(multiliner.text_color(Color32::RED))
-                    .on_hover_text("The SVG string is not correct, please check the syntax.");
-            }
-        });
+                if is_correct {
+                    ui.add(multiliner.layouter(&mut layouter));
+                } else {
+                    ui.add(multiliner.text_color(Color32::RED))
+                        .on_hover_text("The SVG string is not correct, please check the syntax.");
+                }
+            });
         // egui::ScrollArea::vertical()
         //     .id_salt("string_viewer")
         //     .max_height(200.0)

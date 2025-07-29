@@ -1,6 +1,5 @@
 //! Galago
 
-
 #![warn(clippy::all, rust_2018_idioms)]
 #![deny(
     missing_docs,
@@ -10,6 +9,7 @@
     clippy::missing_panics_doc,
     clippy::cargo
 )]
+#![warn(clippy::multiple_crate_versions)]
 
 mod app;
 pub use app::GalagoApp;
@@ -18,4 +18,5 @@ pub mod path;
 mod settings;
 mod string_viewer;
 mod svg_render;
+mod transformation;
 mod tree_viewer;

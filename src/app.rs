@@ -38,7 +38,7 @@ pub struct GalagoApp {
     should_reset_view: bool,
 }
 
-const BASE_SVG: &str = include_str!("../assets/galago.svg");
+const BASE_SVG: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/galago.svg"));
 
 impl Default for GalagoApp {
     fn default() -> Self {

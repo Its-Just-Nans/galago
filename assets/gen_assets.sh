@@ -17,3 +17,5 @@ for i in *.svg; do
         convert -background none "$i" -resize 64x64 "${i%.svg}.png"
     fi
 done
+
+convert -background none "galago.svg" -resize 512x512 "galago.png"

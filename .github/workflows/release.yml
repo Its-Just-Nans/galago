@@ -135,6 +135,7 @@ jobs:
                   rustup -V
                   rustup toolchain list
                   rustup default
+                  rustup target add ${{ matrix.job.target }}
                   cargo -V
                   rustc -V
 

@@ -152,7 +152,7 @@ impl eframe::App for GalagoApp {
                 .show(ctx, |ui| {
                     self.tree_viewer.show(ui, &mut self.svg);
                 });
-            self.string_viewer.is_windows = current_open;
+            self.tree_viewer.is_windows = current_open;
         }
         if self.is_sidebar() {
             egui::panel::SidePanel::right("conf_panel")

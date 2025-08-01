@@ -1,6 +1,8 @@
 //! Tree Viewer
 
-use egui::{Frame, Ui, Window};
+use std::collections::HashMap;
+
+use egui::{Color32, Frame, Ui, Window};
 use egui_extras::{Column, TableBuilder};
 use xmltree::Element;
 
@@ -13,10 +15,13 @@ use crate::{
 };
 
 /// TreeViewer Struct
-#[derive(Default, serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct TreeViewer {
     /// is windows mode
     pub is_windows: bool,
+
+    /// Is multi line
+    is_multi_line: bool,
 
     /// Index of the group to edit
     #[serde(skip)]
@@ -38,6 +43,29 @@ pub struct TreeViewer {
     rotate: f64,
     /// Round to value
     round_to: u64,
+
+    /// Attributes of the tree viewer
+    #[serde(skip)]
+    attributes_temp: HashMap<usize, String>,
+}
+
+impl Default for TreeViewer {
+    fn default() -> Self {
+        Self {
+            is_windows: false,
+            is_multi_line: true,
+            ref_group: None,
+            translate_x: 1.0,
+            translate_y: 1.0,
+            scale_x: 1.0,
+            scale_y: 1.0,
+            rotate_x: 0.0,
+            rotate_y: 0.0,
+            rotate: 0.0,
+            round_to: 1,
+            attributes_temp: HashMap::new(),
+        }
+    }
 }
 
 impl TreeViewer {
@@ -54,6 +82,7 @@ impl TreeViewer {
     /// Settings
     pub fn show_settings(&mut self, ui: &mut Ui) {
         ui.checkbox(&mut self.is_windows, "Tree as windows");
+        ui.checkbox(&mut self.is_multi_line, "Multi line attributes");
     }
 
     /// Show Tree Viewer
@@ -66,31 +95,15 @@ impl TreeViewer {
                     .show(ui, |ui| match &mut Element::parse(svg_str.as_bytes()) {
                         Ok(e) => {
                             // edit width and height and viewbox
-                            if let Some(width) = e.attributes.get_mut("width") {
-                                ui.horizontal(|ui| {
-                                    ui.label("Width:");
-                                    ui.add(egui::TextEdit::singleline(width).hint_text("Width"));
-                                });
-                            } else {
-                                e.attributes.insert("width".to_string(), "100%".to_string());
-                            }
-                            if let Some(height) = e.attributes.get_mut("height") {
-                                ui.horizontal(|ui| {
-                                    ui.label("Height:");
-                                    ui.add(egui::TextEdit::singleline(height).hint_text("Height"));
-                                });
-                            } else {
-                                e.attributes
-                                    .insert("height".to_string(), "100%".to_string());
-                            }
-                            if let Some(viewbox) = e.attributes.get_mut("viewBox") {
-                                ui.horizontal(|ui| {
-                                    ui.label("ViewBox:");
-                                    ui.add(
-                                        egui::TextEdit::singleline(viewbox).hint_text("ViewBox"),
-                                    );
-                                });
-                            }
+                            ui.collapsing("SVG", |ui| {
+                                for (key, value) in e.attributes.iter_mut() {
+                                    ui.horizontal(|ui| {
+                                        ui.label(key);
+                                        ui.text_edit_singleline(value);
+                                    });
+                                }
+                            });
+
                             self.show_group(ui, &mut e.children, None);
                             let mut buf = Vec::new();
                             if e.write(&mut buf).is_ok() {
@@ -232,15 +245,58 @@ impl TreeViewer {
                                         });
                                     })
                                     .body(|mut body| {
+                                        let mut remove_idx = None;
                                         for (key, value) in g.attributes.iter_mut() {
                                             body.row(0.0, |mut row| {
                                                 row.col(|ui| {
-                                                    ui.label(key);
+                                                    ui.scope(|ui| {
+                                                        ui.style_mut()
+                                                            .visuals
+                                                            .widgets
+                                                            .hovered
+                                                            .weak_bg_fill = Color32::RED;
+
+                                                        if ui
+                                                            .button(key)
+                                                            .on_hover_text("Remove this attribute")
+                                                            .clicked()
+                                                        {
+                                                            remove_idx = Some(key.clone());
+                                                        }
+                                                    });
                                                 });
                                                 row.col(|ui| {
-                                                    ui.text_edit_multiline(value);
+                                                    if self.is_multi_line {
+                                                        ui.text_edit_multiline(value);
+                                                    } else {
+                                                        ui.text_edit_singleline(value);
+                                                    }
                                                 });
                                             });
+                                        }
+                                        let key_attr = self.attributes_temp.entry(idx).or_default();
+                                        body.row(0.0, |mut row| {
+                                            row.col(|ui| {
+                                                ui.horizontal(|ui| {
+                                                    ui.text_edit_singleline(key_attr);
+                                                });
+                                            });
+                                            row.col(|ui| {
+                                                if ui
+                                                    .button("Add key")
+                                                    .on_hover_text("Add new attribute")
+                                                    .clicked()
+                                                    && !key_attr.is_empty()
+                                                {
+                                                    g.attributes
+                                                        .insert(key_attr.clone(), "".to_string());
+                                                    key_attr.clear();
+                                                }
+                                            });
+                                        });
+
+                                        if let Some(idx) = remove_idx {
+                                            g.attributes.shift_remove(&idx);
                                         }
                                     });
                             });

@@ -161,7 +161,7 @@ impl eframe::App for GalagoApp {
                         .inner_margin(0)
                         .outer_margin(0),
                 )
-                .min_width(200.0)
+                .min_width(self.settings.min_width_sidebar)
                 .show(ctx, |ui_sidebar| {
                     egui::ScrollArea::vertical()
                         .id_salt("right_sidebar")

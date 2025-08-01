@@ -3,10 +3,22 @@
 use egui::{Context, Id, Modal};
 
 /// Settings of Galago
-#[derive(Default, serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct Settings {
     /// Is setting modal open
     pub open: bool,
+
+    /// Minimum width for the sidebar
+    pub min_width_sidebar: f32,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            open: false,
+            min_width_sidebar: 200.0, // Default minimum width for the sidebar
+        }
+    }
 }
 
 impl Settings {

@@ -55,8 +55,8 @@ impl Default for TreeViewer {
             is_windows: false,
             is_multi_line: true,
             ref_group: None,
-            translate_x: 1.0,
-            translate_y: 1.0,
+            translate_x: 0.0,
+            translate_y: 0.0,
             scale_x: 1.0,
             scale_y: 1.0,
             rotate_x: 0.0,
@@ -398,6 +398,7 @@ impl TreeViewer {
                         .show(ui, |ui| {
                             let segments = &mut parsed_path.items;
                             let mut idx_to_update = None;
+                            let mut item_edit = None;
                             for (idx, path_segment) in segments.iter_mut().enumerate() {
                                 ui.horizontal_wrapped(|ui| {
                                     let letter = path_segment.get_letter();
@@ -405,16 +406,27 @@ impl TreeViewer {
                                     if ui.button(&letter).clicked() {
                                         idx_to_update = Some(idx);
                                     }
-                                    let value = path_segment.value();
+                                    let curr_value = path_segment.value();
+                                    // remove first character from the value
+                                    let mut value = curr_value[1..].to_string();
 
                                     // to do update
-                                    ui.text_edit_singleline(value);
+                                    ui.text_edit_singleline(&mut value);
+
+                                    if value != curr_value[1..] {
+                                        item_edit = Some((idx, format!("{letter}{value}")))
+                                    }
                                 });
                             }
                             if let Some(idx) = idx_to_update {
                                 parsed_path.toggle_coord_type_at(idx);
+                                *path = parsed_path.to_string();
+                            } else if let Some((idx, val)) = item_edit {
+                                if let Ok(new_path) = parsed_path.try_replace_element_at(idx, &val)
+                                {
+                                    *path = new_path;
+                                }
                             }
-                            *path = parsed_path.to_string();
                         });
                 } else {
                     ui.label("No path data found in the selected element.");

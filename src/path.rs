@@ -10,8 +10,6 @@ use svgtypes::{PathParser, PathSegment};
 pub struct SvgItem {
     /// Represents a single SVG path segment.
     pub inner: PathSegment,
-    /// A string representation of the SVG item.
-    pub _value: String,
 }
 
 fn round_to(value: f64, decimals: u64) -> f64 {
@@ -66,9 +64,15 @@ impl SvgItem {
         }
     }
     /// Returns the value of the segment as a string.
-    pub fn value(&mut self) -> &mut String {
-        self._value = self.to_string();
-        &mut self._value
+    pub fn value(&self) -> String {
+        self.to_string()
+    }
+
+    /// Returns the value of the segment as a string.
+    /// # Errors
+    /// Returns an error if the segment cannot be parsed.
+    pub fn set_value(&mut self, to_add: SvgItem) {
+        *self = to_add;
     }
 }
 
@@ -165,10 +169,7 @@ impl SvgPath {
         for segment in s {
             let one_segment = segment
                 .map_err(|e| format!("Failed to parse SVG path segment: {e} in {path_str}"))?;
-            let to_add = SvgItem {
-                inner: one_segment,
-                _value: String::new(),
-            };
+            let to_add = SvgItem { inner: one_segment };
             items.push(to_add);
         }
 
@@ -845,17 +846,41 @@ impl SvgPath {
             }
         }
     }
+
+    /// Try replace element
+    /// # Errors
+    /// Error if it's invalid
+    pub fn try_replace_element_at(&mut self, idx: usize, val: &str) -> Result<String, String> {
+        if idx < self.items.len() {
+            let mut result = String::new();
+            for (index, one_item) in self.items.iter().enumerate() {
+                let segment_str = if index == idx {
+                    val
+                } else {
+                    &one_item.to_string()
+                };
+                result.push_str(segment_str);
+            }
+            match SvgPath::parse(&result) {
+                Ok(path) => {
+                    return Ok(path.to_string());
+                }
+
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+        Err("Invalid index".to_string())
+    }
 }
 
 impl fmt::Display for SvgPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut result = String::new();
         for item in &self.items {
-            let segment_str = format!("{item}");
+            let segment_str = item.to_string();
             if !segment_str.is_empty() {
-                // if !result.is_empty() {
-                //     result.push(' ');
-                // }
                 result.push_str(&segment_str);
             }
         }

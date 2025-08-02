@@ -337,7 +337,13 @@ impl TreeViewer {
             .min_height(100.0)
             .show(ctx, |ui| {
                 if let Some(path) = g.attributes.get_mut("d") {
-                    let mut parsed_path = SvgPath::parse(path).unwrap();
+                    let mut parsed_path = match SvgPath::parse(path) {
+                        Ok(path) => path,
+                        Err(e) => {
+                            ui.label(format!("Invalid path: {e}"));
+                            return;
+                        }
+                    };
                     if ui
                         .button("Convert to relative")
                         .on_hover_text("Convert path to relative coordinates")

@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use egui::{Color32, Frame, Ui, Window};
+use egui::{Color32, DragValue, Frame, Ui, Window};
 use egui_extras::{Column, TableBuilder};
 use svgtypes::PathSegment;
 use xmltree::Element;
@@ -23,6 +23,9 @@ pub struct TreeViewer {
 
     /// Is multi line
     is_multi_line: bool,
+
+    /// Edit as inputs
+    edit_path_as_input: bool,
 
     /// Index of the group to edit
     #[serde(skip)]
@@ -55,6 +58,7 @@ impl Default for TreeViewer {
         Self {
             is_windows: false,
             is_multi_line: true,
+            edit_path_as_input: false,
             ref_group: None,
             translate_x: 0.0,
             translate_y: 0.0,
@@ -84,6 +88,7 @@ impl TreeViewer {
     pub fn show_settings(&mut self, ui: &mut Ui) {
         ui.checkbox(&mut self.is_windows, "Tree as windows");
         ui.checkbox(&mut self.is_multi_line, "Multi line attributes");
+        ui.checkbox(&mut self.edit_path_as_input, "Edit path as inputs");
     }
 
     /// Show Tree Viewer
@@ -440,14 +445,33 @@ impl TreeViewer {
                                         return;
                                     }
                                     let curr_value = path_segment.value();
-                                    // remove first character from the value
-                                    let mut value = curr_value[1..].to_string();
 
-                                    // to do update
-                                    ui.text_edit_singleline(&mut value);
+                                    if self.edit_path_as_input {
+                                        // remove first character from the value
+                                        let numbers_part = curr_value[1..].to_string();
+                                        let mut vec_ret = vec![];
+                                        for one_value in numbers_part.split(" ") {
+                                            let mut value_float = one_value.parse().unwrap_or(0.0);
+                                            ui.add(DragValue::new(&mut value_float));
+                                            vec_ret.push(value_float);
+                                        }
+                                        let joined = vec_ret
+                                            .iter()
+                                            .map(|val| val.to_string())
+                                            .collect::<Vec<String>>()
+                                            .join(" ");
+                                        if joined != curr_value[1..] {
+                                            item_edit = Some((idx, format!("{letter}{joined}")))
+                                        }
+                                    } else {
+                                        // remove first character from the value
+                                        let mut numbers_part = curr_value[1..].to_string();
+                                        ui.text_edit_singleline(&mut numbers_part);
 
-                                    if value != curr_value[1..] {
-                                        item_edit = Some((idx, format!("{letter}{value}")))
+                                        if numbers_part != curr_value[1..] {
+                                            item_edit =
+                                                Some((idx, format!("{letter}{numbers_part}")))
+                                        }
                                     }
                                 });
                             }

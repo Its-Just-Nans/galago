@@ -1,6 +1,6 @@
 # galago [![crates.io version](https://img.shields.io/crates/v/galago)](https://crates.io/crates/galago) ![crates.io downloads](https://img.shields.io/crates/d/galago) [![docs.rs](https://img.shields.io/docsrs/galago)](https://crates.io/crates/galago)
 
-A simple image editor.
+A simple svg editor.
 
 - <https://galago.n4n5.dev/> - demo
 - <https://github.com/Its-Just-Nans/galago> - repo

@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use egui::{Color32, Frame, Ui, Window};
 use egui_extras::{Column, TableBuilder};
+use svgtypes::PathSegment;
 use xmltree::Element;
 
 use crate::{
@@ -349,8 +350,16 @@ impl TreeViewer {
                         *path = parsed_path.to_string();
                     }
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(&mut self.translate_x).speed(0.1));
-                        ui.add(egui::DragValue::new(&mut self.translate_y).speed(0.1));
+                        ui.add(
+                            egui::DragValue::new(&mut self.translate_x)
+                                .speed(0.1)
+                                .prefix("x: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.translate_y)
+                                .speed(0.1)
+                                .prefix("y: "),
+                        );
                         ui.button("Translate")
                             .on_hover_text("Translate path by the given values")
                             .clicked()
@@ -360,8 +369,16 @@ impl TreeViewer {
                             });
                     });
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(&mut self.scale_x).speed(0.1));
-                        ui.add(egui::DragValue::new(&mut self.scale_y).speed(0.1));
+                        ui.add(
+                            egui::DragValue::new(&mut self.scale_x)
+                                .speed(0.1)
+                                .prefix("x: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.scale_y)
+                                .speed(0.1)
+                                .prefix("y: "),
+                        );
                         ui.button("Scale")
                             .on_hover_text("Scale path by the given values")
                             .clicked()
@@ -371,9 +388,21 @@ impl TreeViewer {
                             });
                     });
                     ui.horizontal(|ui| {
-                        ui.add(egui::DragValue::new(&mut self.rotate_x).speed(0.1));
-                        ui.add(egui::DragValue::new(&mut self.rotate_y).speed(0.1));
-                        ui.add(egui::DragValue::new(&mut self.rotate).speed(0.1));
+                        ui.add(
+                            egui::DragValue::new(&mut self.rotate_x)
+                                .speed(0.1)
+                                .prefix("x: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.rotate_y)
+                                .speed(0.1)
+                                .prefix("y: "),
+                        );
+                        ui.add(
+                            egui::DragValue::new(&mut self.rotate)
+                                .speed(0.1)
+                                .suffix("°"),
+                        );
                         ui.button("Rotate")
                             .on_hover_text("Rotate path by the given values")
                             .clicked()
@@ -403,8 +432,12 @@ impl TreeViewer {
                                 ui.horizontal_wrapped(|ui| {
                                     let letter = path_segment.get_letter();
 
-                                    if ui.button(&letter).clicked() {
+                                    if ui.button(letter.to_string()).clicked() {
                                         idx_to_update = Some(idx);
+                                    }
+                                    if let PathSegment::ClosePath { abs: _ } = path_segment.inner {
+                                        // ClosePath don't have numbers
+                                        return;
                                     }
                                     let curr_value = path_segment.value();
                                     // remove first character from the value

@@ -35,31 +35,31 @@ impl SvgItem {
     }
 
     /// Get the letter of PathSegment
-    pub fn get_letter(&self) -> String {
+    pub fn get_letter(&self) -> char {
         match self.is_abs() {
             true => match self.inner {
-                PathSegment::MoveTo { abs: _, .. } => "M".to_string(),
-                PathSegment::LineTo { abs: _, .. } => "L".to_string(),
-                PathSegment::HorizontalLineTo { abs: _, .. } => "H".to_string(),
-                PathSegment::VerticalLineTo { abs: _, .. } => "V".to_string(),
-                PathSegment::CurveTo { abs: _, .. } => "C".to_string(),
-                PathSegment::SmoothCurveTo { abs: _, .. } => "S".to_string(),
-                PathSegment::Quadratic { abs: _, .. } => "Q".to_string(),
-                PathSegment::SmoothQuadratic { abs: _, .. } => "T".to_string(),
-                PathSegment::EllipticalArc { abs: _, .. } => "A".to_string(),
-                PathSegment::ClosePath { abs: _ } => "Z".to_string(),
+                PathSegment::MoveTo { abs: _, .. } => 'M',
+                PathSegment::LineTo { abs: _, .. } => 'L',
+                PathSegment::HorizontalLineTo { abs: _, .. } => 'H',
+                PathSegment::VerticalLineTo { abs: _, .. } => 'V',
+                PathSegment::CurveTo { abs: _, .. } => 'C',
+                PathSegment::SmoothCurveTo { abs: _, .. } => 'S',
+                PathSegment::Quadratic { abs: _, .. } => 'Q',
+                PathSegment::SmoothQuadratic { abs: _, .. } => 'T',
+                PathSegment::EllipticalArc { abs: _, .. } => 'A',
+                PathSegment::ClosePath { abs: _ } => 'Z',
             },
             false => match self.inner {
-                PathSegment::MoveTo { abs: _, .. } => "m".to_string(),
-                PathSegment::LineTo { abs: _, .. } => "l".to_string(),
-                PathSegment::HorizontalLineTo { abs: _, .. } => "h".to_string(),
-                PathSegment::VerticalLineTo { abs: _, .. } => "v".to_string(),
-                PathSegment::CurveTo { abs: _, .. } => "c".to_string(),
-                PathSegment::SmoothCurveTo { abs: _, .. } => "s".to_string(),
-                PathSegment::Quadratic { abs: _, .. } => "q".to_string(),
-                PathSegment::SmoothQuadratic { abs: _, .. } => "t".to_string(),
-                PathSegment::EllipticalArc { abs: _, .. } => "a".to_string(),
-                PathSegment::ClosePath { abs: _ } => "z".to_string(),
+                PathSegment::MoveTo { abs: _, .. } => 'm',
+                PathSegment::LineTo { abs: _, .. } => 'l',
+                PathSegment::HorizontalLineTo { abs: _, .. } => 'h',
+                PathSegment::VerticalLineTo { abs: _, .. } => 'v',
+                PathSegment::CurveTo { abs: _, .. } => 'c',
+                PathSegment::SmoothCurveTo { abs: _, .. } => 's',
+                PathSegment::Quadratic { abs: _, .. } => 'q',
+                PathSegment::SmoothQuadratic { abs: _, .. } => 't',
+                PathSegment::EllipticalArc { abs: _, .. } => 'a',
+                PathSegment::ClosePath { abs: _ } => 'z',
             },
         }
     }
@@ -79,20 +79,20 @@ impl SvgItem {
 impl fmt::Display for SvgItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let fmt = match self.inner {
-            PathSegment::MoveTo { abs, x, y } => {
-                format!("{}{} {}", if abs { "M" } else { "m" }, x, y)
+            PathSegment::MoveTo { abs: _, x, y } => {
+                format!("{}{} {}", self.get_letter(), x, y)
             }
-            PathSegment::LineTo { abs, x, y } => {
-                format!("{}{} {}", if abs { "L" } else { "l" }, x, y)
+            PathSegment::LineTo { abs: _, x, y } => {
+                format!("{}{} {}", self.get_letter(), x, y)
             }
-            PathSegment::HorizontalLineTo { abs, x } => {
-                format!("{}{}", if abs { "H" } else { "h" }, x)
+            PathSegment::HorizontalLineTo { abs: _, x } => {
+                format!("{}{}", self.get_letter(), x)
             }
-            PathSegment::VerticalLineTo { abs, y } => {
-                format!("{}{}", if abs { "V" } else { "v" }, y)
+            PathSegment::VerticalLineTo { abs: _, y } => {
+                format!("{}{}", self.get_letter(), y)
             }
             PathSegment::CurveTo {
-                abs,
+                abs: _,
                 x1,
                 y1,
                 x2,
@@ -101,7 +101,7 @@ impl fmt::Display for SvgItem {
                 y,
             } => format!(
                 "{}{} {} {} {} {} {}",
-                if abs { "C" } else { "c" },
+                self.get_letter(),
                 x1,
                 y1,
                 x2,
@@ -109,17 +109,29 @@ impl fmt::Display for SvgItem {
                 x,
                 y
             ),
-            PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
-                format!("{}{} {} {} {}", if abs { "S" } else { "s" }, x2, y2, x, y)
+            PathSegment::SmoothCurveTo {
+                abs: _,
+                x2,
+                y2,
+                x,
+                y,
+            } => {
+                format!("{}{} {} {} {}", self.get_letter(), x2, y2, x, y)
             }
-            PathSegment::Quadratic { abs, x1, y1, x, y } => {
-                format!("{}{} {} {} {}", if abs { "Q" } else { "q" }, x1, y1, x, y)
+            PathSegment::Quadratic {
+                abs: _,
+                x1,
+                y1,
+                x,
+                y,
+            } => {
+                format!("{}{} {} {} {}", self.get_letter(), x1, y1, x, y)
             }
-            PathSegment::SmoothQuadratic { abs, x, y } => {
-                format!("{}{} {}", if abs { "T" } else { "t" }, x, y)
+            PathSegment::SmoothQuadratic { abs: _, x, y } => {
+                format!("{}{} {}", self.get_letter(), x, y)
             }
             PathSegment::EllipticalArc {
-                abs,
+                abs: _,
                 rx,
                 ry,
                 x_axis_rotation,
@@ -129,7 +141,7 @@ impl fmt::Display for SvgItem {
                 y,
             } => format!(
                 "{}{} {} {} {} {} {} {}",
-                if abs { "A" } else { "a" },
+                self.get_letter(),
                 rx,
                 ry,
                 x_axis_rotation,

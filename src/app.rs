@@ -45,7 +45,7 @@ impl Default for GalagoApp {
         Self {
             svg: BASE_SVG.to_owned(),
             scene_rect: egui::Rect::NAN,
-            settings: Settings::new(),
+            settings: Settings::default(),
             tree_viewer: TreeViewer::new(),
             string_viewer: StringViewer::new(),
             grid: Grid::default(),

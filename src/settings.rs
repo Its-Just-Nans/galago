@@ -1,8 +1,8 @@
-//! Galago Settings
+//! Settings component
 
 use egui::{Context, Id, Modal};
 
-/// Settings of Galago
+/// Settings object
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Settings {
     /// Is setting modal open
@@ -22,15 +22,10 @@ impl Default for Settings {
 }
 
 impl Settings {
-    /// Create new Settings struct
-    pub fn new() -> Self {
-        Default::default()
-    }
-
     /// Show settings Ui
     pub fn show(&mut self, ctx: &Context, ui_fn: impl FnOnce(&mut egui::Ui)) {
         if self.open {
-            let modal = Modal::new(Id::new("Modal A")).show(ctx, |ui| {
+            let modal = Modal::new(Id::new("Modal settings")).show(ctx, |ui| {
                 ui.label(format!("{} settings", env!("CARGO_PKG_NAME")));
                 ui.separator();
                 ui_fn(ui);

@@ -3,8 +3,8 @@
 use egui::{Pos2, Rect, Window};
 
 use crate::{
-    grid::Grid, settings::Settings, string_viewer::StringViewer, svg_render::SvgRender,
-    tree_viewer::TreeViewer,
+    errors::ErrorManager, file_handler::FileHandler, grid::Grid, settings::Settings,
+    string_viewer::StringViewer, svg_render::SvgRender, tree_viewer::TreeViewer,
 };
 use egui::ThemePreference;
 
@@ -12,6 +12,9 @@ use egui::ThemePreference;
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GalagoApp {
+    /// Save SVG
+    base_svg: String,
+
     /// SVG Screen
     svg: String,
 
@@ -36,6 +39,13 @@ pub struct GalagoApp {
 
     /// should reset the view
     should_reset_view: bool,
+
+    /// Error_manager
+    #[serde(skip)]
+    pub error_manager: ErrorManager,
+
+    /// File handler
+    file_handler: FileHandler,
 }
 
 const BASE_SVG: &str = include_str!("../assets/galago.svg");
@@ -43,7 +53,8 @@ const BASE_SVG: &str = include_str!("../assets/galago.svg");
 impl Default for GalagoApp {
     fn default() -> Self {
         Self {
-            svg: BASE_SVG.to_owned(),
+            svg: BASE_SVG.to_string(),
+            base_svg: BASE_SVG.to_string(),
             scene_rect: egui::Rect::NAN,
             settings: Settings::default(),
             tree_viewer: TreeViewer::new(),
@@ -51,6 +62,8 @@ impl Default for GalagoApp {
             grid: Grid::default(),
             svg_render: SvgRender::new(),
             should_reset_view: false,
+            file_handler: Default::default(),
+            error_manager: Default::default(),
         }
     }
 }
@@ -90,6 +103,10 @@ impl eframe::App for GalagoApp {
                     let is_web = cfg!(target_arch = "wasm32");
                     if !is_web && ui.button("Quit").clicked() {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                    if ui.button("Open").clicked() {
+                        ui.close();
+                        self.file_handler.handle_file_open();
                     }
                     if ui.button("Settings").clicked() {
                         self.settings.open = true;
@@ -207,6 +224,17 @@ impl eframe::App for GalagoApp {
                     self.scene_rect = real_rect;
                 }
             });
+        match self.file_handler.handle_files(ctx) {
+            Ok(Some(img)) => {
+                self.base_svg = img.clone();
+                self.svg = img;
+            }
+            Ok(None) => {}
+            Err(err) => {
+                self.error_manager.add_error(err);
+            }
+        }
+        self.error_manager.show(ctx);
         self.settings.show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label(format!("{} settings", self.svg_render.title()));

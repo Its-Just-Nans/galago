@@ -13,6 +13,8 @@
 
 mod app;
 pub use app::GalagoApp;
+mod errors;
+mod file_handler;
 mod grid;
 pub mod path;
 mod settings;

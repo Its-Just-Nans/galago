@@ -267,6 +267,17 @@ impl eframe::App for GalagoApp {
                     self.grid = Grid::default();
                 });
             });
+
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{} settings", self.error_manager.title()));
+                ui.button("⟳").clicked().then(|| {
+                    self.error_manager = Default::default();
+                });
+            });
+            self.error_manager.show_settings(ui);
+
+            ui.separator();
             self.grid.show_settings(ui);
             ui.separator();
             if ui.button("Default svg").clicked() {

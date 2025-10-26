@@ -1,4 +1,4 @@
-# galago [![crates.io version](https://img.shields.io/crates/v/galago)](https://crates.io/crates/galago) ![crates.io downloads](https://img.shields.io/crates/d/galago) [![docs.rs](https://img.shields.io/docsrs/galago)](https://crates.io/crates/galago)
+# galago [![crates.io version](https://img.shields.io/crates/v/galago)](https://crates.io/crates/galago) ![crates.io downloads](https://img.shields.io/crates/d/galago) [![docs.rs](https://img.shields.io/docsrs/galago)](https://docs.rs/galago)
 
 A simple svg editor. Check also its cousin [tarsier](https://tarsier.n4n5.dev), a simple image editor.
 

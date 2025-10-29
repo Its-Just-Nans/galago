@@ -12,6 +12,11 @@ A simple svg editor. Check also its cousin [tarsier](https://tarsier.n4n5.dev), 
 
 ```sh
 cargo install galago --locked
+
+# usage as CLI
+galago path/to/file.svg
+# or
+galago
 ```
 
 ## LICENSE

@@ -2,7 +2,7 @@
 
 ## 2025-10-28
 
-- New realease `1.0.0`
+- New release `1.0.0`
 - Tiny fixs in UI
 - Add save menu button
 - Read the first argument if used as CLI

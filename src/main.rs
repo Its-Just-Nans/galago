@@ -4,6 +4,8 @@
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
+    use std::env;
+
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
 
     let native_options = eframe::NativeOptions {
@@ -17,10 +19,33 @@ fn main() -> eframe::Result {
             ),
         ..Default::default()
     };
+    let args: Vec<String> = env::args().collect();
+    let base_svg_file = if args.len() > 1 {
+        use std::fs;
+
+        let path = &args[1];
+        match fs::read_to_string(path) {
+            Ok(svg) => Some(svg),
+            Err(e) => {
+                use std::process::exit;
+
+                eprintln!("Failed to load svg '{path}': {e}");
+                exit(1);
+            }
+        }
+    } else {
+        None
+    };
     eframe::run_native(
         "galago",
         native_options,
-        Box::new(|cc: &eframe::CreationContext<'_>| Ok(Box::new(galago::GalagoApp::new(cc)))),
+        Box::new(|cc: &eframe::CreationContext<'_>| {
+            use galago::GalagoApp;
+            match base_svg_file {
+                Some(base_svg) => Ok(Box::new(GalagoApp::new_with_svg(cc, base_svg))),
+                None => Ok(Box::new(GalagoApp::new(cc))),
+            }
+        }),
     )
 }
 

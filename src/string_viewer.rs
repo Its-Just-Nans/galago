@@ -12,9 +12,6 @@ pub struct StringViewer {
     /// Theme
     pub theme: egui_extras::syntax_highlighting::CodeTheme,
 
-    /// is theme dark
-    pub is_theme_dark: bool,
-
     /// Font size for the theme
     pub theme_font_size: f32,
 }
@@ -26,7 +23,6 @@ impl Default for StringViewer {
         Self {
             is_windows: false,
             theme: egui_extras::syntax_highlighting::CodeTheme::dark(DEFAULT_FONT_SIZE),
-            is_theme_dark: true,
             theme_font_size: DEFAULT_FONT_SIZE,
         }
     }
@@ -46,38 +42,8 @@ impl StringViewer {
     /// Show settings for String Viewer
     pub fn show_settings(&mut self, ui: &mut Ui) {
         ui.checkbox(&mut self.is_windows, "String as windows");
-        if ui
-            .add(egui::Slider::new(&mut self.theme_font_size, 8.0..=32.0).text("Font Size"))
-            .on_hover_text("Font size for the code editor")
-            .changed()
-        {
-            if self.is_theme_dark {
-                self.theme =
-                    egui_extras::syntax_highlighting::CodeTheme::dark(self.theme_font_size);
-                self.is_theme_dark = true;
-            } else {
-                self.theme =
-                    egui_extras::syntax_highlighting::CodeTheme::light(self.theme_font_size);
-                self.is_theme_dark = false;
-            }
-        }
-        ui.horizontal(|ui| {
-            let mut current_value_is_dark = self.is_theme_dark;
-            ui.radio_value(&mut current_value_is_dark, true, "Dark Theme")
-                .on_hover_text("Use dark theme for the code editor");
-            ui.radio_value(&mut current_value_is_dark, false, "Light Theme");
-            if current_value_is_dark != self.is_theme_dark {
-                if current_value_is_dark {
-                    self.theme =
-                        egui_extras::syntax_highlighting::CodeTheme::dark(self.theme_font_size);
-                    self.is_theme_dark = true;
-                } else {
-                    self.theme =
-                        egui_extras::syntax_highlighting::CodeTheme::light(self.theme_font_size);
-                    self.is_theme_dark = false;
-                }
-            }
-        });
+        ui.add(egui::Slider::new(&mut self.theme_font_size, 8.0..=32.0).text("Font Size"))
+            .on_hover_text("Font size for the code editor");
         self.theme.ui(ui);
         self.theme.clone().store_in_memory(ui.ctx());
     }
@@ -90,12 +56,12 @@ impl StringViewer {
                 ui.style(),
                 &self.theme,
                 buf.as_str(),
-                "rs",
+                "svg",
             );
             layout_job.wrap.max_width = wrap_width;
-            ui.fonts(|f| f.layout_job(layout_job))
+            ui.fonts_mut(|f| f.layout_job(layout_job))
         };
-        let height = ui.ctx().screen_rect().height();
+        let height = ui.ctx().viewport_rect().height();
         egui::ScrollArea::vertical()
             .max_height(height / 2.0 - 40.0)
             .show(ui, |ui| {

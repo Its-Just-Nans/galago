@@ -1,12 +1,13 @@
 //! Galago app
 
+use std::path::PathBuf;
+
 use egui::{Pos2, Rect, Window};
 
 use crate::{
     errors::ErrorManager, file_handler::FileHandler, grid::Grid, settings::Settings,
     string_viewer::StringViewer, svg_render::SvgRender, tree_viewer::TreeViewer,
 };
-use egui::ThemePreference;
 
 /// GalagoApp struct
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -16,14 +17,14 @@ pub struct GalagoApp {
     base_svg: String,
 
     /// SVG Screen
-    svg: String,
+    pub(crate) svg: String,
 
     /// Current scene zoom
     #[serde(skip)]
     scene_rect: egui::Rect,
 
     /// Settings Ui
-    settings: Settings,
+    pub(crate) settings: Settings,
 
     /// TreeViewer Ui
     tree_viewer: TreeViewer,
@@ -38,14 +39,21 @@ pub struct GalagoApp {
     svg_render: SvgRender,
 
     /// should reset the view
-    should_reset_view: bool,
+    pub(crate) should_reset_view: bool,
 
     /// Error_manager
     #[serde(skip)]
     pub error_manager: ErrorManager,
 
     /// File handler
-    file_handler: FileHandler,
+    pub(crate) file_handler: FileHandler,
+
+    /// Debug and inspection toggle
+    #[serde(skip)]
+    show_inspection: bool,
+
+    /// Path to save the svg
+    pub save_path: Option<PathBuf>,
 }
 
 const BASE_SVG: &str = include_str!("../assets/galago.svg");
@@ -64,6 +72,8 @@ impl Default for GalagoApp {
             should_reset_view: false,
             file_handler: Default::default(),
             error_manager: Default::default(),
+            save_path: None,
+            show_inspection: false,
         }
     }
 }
@@ -83,6 +93,14 @@ impl GalagoApp {
         Default::default()
     }
 
+    /// Create a new Galago App with an svg
+    pub fn new_with_svg(cc: &eframe::CreationContext<'_>, svg: String) -> Self {
+        let mut app = Self::new(cc);
+        app.base_svg = svg.clone();
+        app.svg = svg;
+        app
+    }
+
     /// Check if the sidebar is needed
     fn is_sidebar(&self) -> bool {
         !self.tree_viewer.is_windows || !self.string_viewer.is_windows
@@ -97,52 +115,7 @@ impl eframe::App for GalagoApp {
 
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            egui::MenuBar::new().ui(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    let is_web = cfg!(target_arch = "wasm32");
-                    if !is_web && ui.button("Quit").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                    }
-                    if ui.button("Open").clicked() {
-                        ui.close();
-                        self.file_handler.handle_file_open();
-                    }
-                    if ui.button("Settings").clicked() {
-                        self.settings.open = true;
-                    }
-                    ui.menu_button("Theme", |ui| {
-                        let mut theme_preference = ui.ctx().options(|opt| opt.theme_preference);
-                        ui.selectable_value(
-                            &mut theme_preference,
-                            ThemePreference::Light,
-                            "☀ Light",
-                        );
-                        ui.selectable_value(
-                            &mut theme_preference,
-                            ThemePreference::Dark,
-                            "🌙 Dark",
-                        );
-                        ui.selectable_value(
-                            &mut theme_preference,
-                            ThemePreference::System,
-                            "💻 System",
-                        );
-                        ui.ctx().set_theme(theme_preference);
-                    });
-                    ui.add(
-                        egui::Hyperlink::from_label_and_url(
-                            "Github repo",
-                            "https://github.com/Its-Just-Nans/galago",
-                        )
-                        .open_in_new_tab(true),
-                    );
-                    egui::warn_if_debug_build(ui);
-                });
-                ui.separator();
-                self.should_reset_view = ui.button("Double click to Reset view").clicked();
-            });
-        });
+        self.top_panel(ctx);
 
         let color = self.svg_render.update(ctx, &self.svg).is_ok();
 
@@ -170,6 +143,14 @@ impl eframe::App for GalagoApp {
                     self.tree_viewer.show(ui, &mut self.svg);
                 });
             self.tree_viewer.is_windows = current_open;
+        }
+        if self.show_inspection {
+            egui::Window::new("Inspection")
+                .open(&mut self.show_inspection)
+                .vscroll(true)
+                .show(ctx, |ui| {
+                    ctx.inspection_ui(ui);
+                });
         }
         if self.is_sidebar() {
             egui::panel::SidePanel::right("conf_panel")
@@ -225,9 +206,9 @@ impl eframe::App for GalagoApp {
                 }
             });
         match self.file_handler.handle_files(ctx) {
-            Ok(Some(img)) => {
-                self.base_svg = img.clone();
-                self.svg = img;
+            Ok(Some(svg_str)) => {
+                self.base_svg = svg_str.clone();
+                self.svg = svg_str;
             }
             Ok(None) => {}
             Err(err) => {
@@ -236,6 +217,9 @@ impl eframe::App for GalagoApp {
         }
         self.error_manager.show(ctx);
         self.settings.show(ctx, |ui| {
+            ui.checkbox(&mut self.show_inspection, "Debug panel");
+
+            ui.separator();
             ui.horizontal(|ui| {
                 ui.label(format!("{} settings", self.svg_render.title()));
                 if ui.button("⟳").clicked() {
@@ -243,6 +227,7 @@ impl eframe::App for GalagoApp {
                 }
             });
             self.svg_render.show_settings(ui);
+
             ui.separator();
             ui.horizontal(|ui| {
                 ui.label(format!("{} settings", self.tree_viewer.title()));
@@ -260,6 +245,7 @@ impl eframe::App for GalagoApp {
                 });
             });
             self.string_viewer.show_settings(ui);
+
             ui.separator();
             ui.horizontal(|ui| {
                 ui.label(format!("{} settings", self.grid.title()));
@@ -267,6 +253,7 @@ impl eframe::App for GalagoApp {
                     self.grid = Grid::default();
                 });
             });
+            self.grid.show_settings(ui);
 
             ui.separator();
             ui.horizontal(|ui| {
@@ -277,8 +264,6 @@ impl eframe::App for GalagoApp {
             });
             self.error_manager.show_settings(ui);
 
-            ui.separator();
-            self.grid.show_settings(ui);
             ui.separator();
             if ui.button("Default svg").clicked() {
                 self.svg = BASE_SVG.to_owned();

@@ -13,8 +13,8 @@ use crate::{
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GalagoApp {
-    /// Save SVG
-    base_svg: String,
+    /// Save of the SVG
+    saved_svg: String,
 
     /// SVG Screen
     pub(crate) svg: String,
@@ -62,7 +62,7 @@ impl Default for GalagoApp {
     fn default() -> Self {
         Self {
             svg: BASE_SVG.to_string(),
-            base_svg: BASE_SVG.to_string(),
+            saved_svg: BASE_SVG.to_string(),
             scene_rect: egui::Rect::NAN,
             settings: Settings::default(),
             tree_viewer: TreeViewer::new(),
@@ -96,7 +96,7 @@ impl GalagoApp {
     /// Create a new Galago App with an svg
     pub fn new_with_svg(cc: &eframe::CreationContext<'_>, svg: String) -> Self {
         let mut app = Self::new(cc);
-        app.base_svg = svg.clone();
+        app.saved_svg = svg.clone();
         app.svg = svg;
         app
     }
@@ -207,7 +207,7 @@ impl eframe::App for GalagoApp {
             });
         match self.file_handler.handle_files(ctx) {
             Ok(Some(svg_str)) => {
-                self.base_svg = svg_str.clone();
+                self.saved_svg = svg_str.clone();
                 self.svg = svg_str;
             }
             Ok(None) => {}
@@ -266,7 +266,8 @@ impl eframe::App for GalagoApp {
 
             ui.separator();
             if ui.button("Default svg").clicked() {
-                self.svg = BASE_SVG.to_owned();
+                self.saved_svg = BASE_SVG.to_string();
+                self.svg = BASE_SVG.to_string();
             }
         });
     }

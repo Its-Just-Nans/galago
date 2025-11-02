@@ -60,6 +60,10 @@ impl GalagoApp {
                 });
                 ui.separator();
                 self.should_reset_view = ui.button("Double click to Reset view").clicked();
+                ui.separator();
+                if ui.button("Copy").clicked() {
+                    ctx.copy_text(self.svg.clone());
+                }
             });
         });
     }

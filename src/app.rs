@@ -103,6 +103,7 @@ impl BladvakApp for GalagoApp {
         Ok(Self::new_app(cc))
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn new_with_args(cc: &eframe::CreationContext<'_>, args: &[String]) -> Result<Self, AppError> {
         if args.len() > 1 {
             use std::fs;

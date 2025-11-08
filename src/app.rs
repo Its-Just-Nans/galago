@@ -1,12 +1,12 @@
 //! Galago app
 
+use bladvak::{AppError, BladvakApp};
+use egui::{Pos2, Rect, Window};
+use std::fmt::Debug;
 use std::path::PathBuf;
 
-use egui::{Pos2, Rect, Window};
-
 use crate::{
-    errors::ErrorManager, file_handler::FileHandler, grid::Grid, settings::Settings,
-    string_viewer::StringViewer, svg_render::SvgRender, tree_viewer::TreeViewer,
+    grid::Grid, string_viewer::StringViewer, svg_render::SvgRender, tree_viewer::TreeViewer,
 };
 
 /// GalagoApp struct
@@ -14,7 +14,7 @@ use crate::{
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GalagoApp {
     /// Save of the SVG
-    saved_svg: String,
+    pub(crate) saved_svg: String,
 
     /// SVG Screen
     pub(crate) svg: String,
@@ -22,9 +22,6 @@ pub struct GalagoApp {
     /// Current scene zoom
     #[serde(skip)]
     scene_rect: egui::Rect,
-
-    /// Settings Ui
-    pub(crate) settings: Settings,
 
     /// TreeViewer Ui
     tree_viewer: TreeViewer,
@@ -41,19 +38,15 @@ pub struct GalagoApp {
     /// should reset the view
     pub(crate) should_reset_view: bool,
 
-    /// Error_manager
-    #[serde(skip)]
-    pub error_manager: ErrorManager,
-
-    /// File handler
-    pub(crate) file_handler: FileHandler,
-
     /// Debug and inspection toggle
     #[serde(skip)]
     show_inspection: bool,
 
     /// Path to save the svg
     pub save_path: Option<PathBuf>,
+
+    /// Svg is valid
+    pub svg_is_valid: bool,
 }
 
 const BASE_SVG: &str = include_str!("../assets/galago.svg");
@@ -64,23 +57,27 @@ impl Default for GalagoApp {
             svg: BASE_SVG.to_string(),
             saved_svg: BASE_SVG.to_string(),
             scene_rect: egui::Rect::NAN,
-            settings: Settings::default(),
             tree_viewer: TreeViewer::new(),
             string_viewer: StringViewer::new(),
             grid: Grid::default(),
             svg_render: SvgRender::new(),
             should_reset_view: false,
-            file_handler: Default::default(),
-            error_manager: Default::default(),
             save_path: None,
             show_inspection: false,
+            svg_is_valid: true,
         }
     }
 }
 
+impl Debug for GalagoApp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug_fmt = f.debug_struct("GalagoApp");
+        debug_fmt.finish()
+    }
+}
 impl GalagoApp {
-    /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    /// New GalagoApp
+    fn new_app(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
@@ -92,33 +89,182 @@ impl GalagoApp {
 
         Default::default()
     }
-
     /// Create a new Galago App with an svg
-    pub fn new_with_svg(cc: &eframe::CreationContext<'_>, svg: String) -> Self {
-        let mut app = Self::new(cc);
+    pub fn new_app_with_svg(cc: &eframe::CreationContext<'_>, svg: String) -> Self {
+        let mut app = Self::new_app(cc);
         app.saved_svg = svg.clone();
         app.svg = svg;
         app
     }
+}
 
+impl BladvakApp for GalagoApp {
+    fn new(cc: &eframe::CreationContext<'_>) -> Result<Self, AppError> {
+        Ok(Self::new_app(cc))
+    }
+
+    fn new_with_args(cc: &eframe::CreationContext<'_>, args: &[String]) -> Result<Self, AppError> {
+        if args.len() > 1 {
+            use std::fs;
+
+            let path = &args[1];
+            match fs::read_to_string(path) {
+                Ok(svg) => Ok(Self::new_app_with_svg(cc, svg)),
+                Err(e) => {
+                    eprintln!("Failed to load svg '{path}': {e}");
+                    Err(AppError::new(format!("Failed to load svg '{path}': {e}")))
+                }
+            }
+        } else {
+            Ok(Self::new_app(cc))
+        }
+    }
+
+    fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
+        self.app_top_panel(ui, error_manager)
+    }
+    fn settings(&mut self, ui: &mut egui::Ui, _error_manager: &mut bladvak::ErrorManager) {
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(format!("{} settings", self.svg_render.title()));
+            if ui.button("⟳").clicked() {
+                self.svg_render = SvgRender::new();
+            }
+        });
+        self.svg_render.show_settings(ui);
+
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(format!("{} settings", self.tree_viewer.title()));
+            ui.button("⟳").clicked().then(|| {
+                self.tree_viewer = TreeViewer::new();
+            });
+        });
+        self.tree_viewer.show_settings(ui);
+
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(format!("{} settings", self.string_viewer.title()));
+            ui.button("⟳").clicked().then(|| {
+                self.string_viewer = StringViewer::new();
+            });
+        });
+        self.string_viewer.show_settings(ui);
+
+        ui.separator();
+        ui.horizontal(|ui| {
+            ui.label(format!("{} settings", self.grid.title()));
+            ui.button("⟳").clicked().then(|| {
+                self.grid = Grid::default();
+            });
+        });
+        self.grid.show_settings(ui);
+
+        ui.separator();
+        if ui.button("Default svg").clicked() {
+            self.saved_svg = BASE_SVG.to_string();
+            self.svg = BASE_SVG.to_string();
+        }
+    }
+
+    fn name(&self) -> String {
+        env!("CARGO_PKG_NAME").to_string()
+    }
+    fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
+        self.app_central_panel(ui, error_manager)
+    }
+
+    fn handle_file(&mut self, bytes: &[u8]) -> Result<(), AppError> {
+        match String::from_utf8(bytes.to_vec()) {
+            Ok(svg_str) => {
+                self.saved_svg = svg_str.clone();
+                self.svg = svg_str;
+                Ok(())
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
     /// Check if the sidebar is needed
-    fn is_sidebar(&self) -> bool {
+    fn is_side_panel(&self) -> bool {
         !self.tree_viewer.is_windows || !self.string_viewer.is_windows
+    }
+
+    fn side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
+        self.app_side_panel(ui, error_manager);
+    }
+
+    fn is_open_button(&self) -> bool {
+        true
+    }
+
+    fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
+        if ui.button("Save").clicked() {
+            ui.close();
+            let save_path = bladvak::utils::get_save_path(Some(PathBuf::from("file.svg")));
+            if let Some(save_p) = error_manager.handle_error(save_path) {
+                self.save_path = save_p.clone();
+                if let Some(path_to_save) = save_p {
+                    let res = self.save_svg(&path_to_save);
+                    error_manager.handle_error(res);
+                }
+            }
+        }
     }
 }
 
-impl eframe::App for GalagoApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+impl GalagoApp {
+    /// Side panel
+    fn app_side_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut bladvak::ErrorManager) {
+        egui::ScrollArea::vertical()
+            .id_salt("right_sidebar")
+            .show(ui, |ui| {
+                if !self.string_viewer.is_windows {
+                    self.string_viewer
+                        .show(ui, &mut self.svg, self.svg_is_valid);
+                }
+                if !self.tree_viewer.is_windows {
+                    if !self.string_viewer.is_windows {
+                        ui.separator();
+                    }
+                    self.tree_viewer.show(ui, &mut self.svg);
+                }
+            });
     }
 
-    /// Called each time the UI needs repainting, which may be many times per second.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.top_panel(ctx);
+    /// Central panel
+    fn app_central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
+        self.other_central_panel(ui, error_manager);
+        let rect = ui.available_rect_before_wrap();
+        let response = egui::Scene::new()
+            .max_inner_size([350.0, 1000.0])
+            .zoom_range(0.1..=50.0)
+            .show(ui, &mut self.scene_rect, |ui| {
+                let painter = ui.painter();
+                let bg_r: egui::Response = ui.response();
+                if bg_r.rect.is_finite() {
+                    self.grid.draw(&bg_r.rect, painter);
+                }
+                let _response = self.svg_render.show(ui);
+                // if response.clicked() {
+                //     println!("SVG clicked!");
+                // }
+            })
+            .response;
 
-        let color = self.svg_render.update(ctx, &self.svg).is_ok();
+        if self.should_reset_view || response.double_clicked() {
+            let real_rect = Rect::from_two_pos(Pos2::ZERO, (rect.max - rect.min).to_pos2());
+            self.scene_rect = real_rect;
+        }
+    }
 
+    /// Other central panel
+    fn other_central_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        _error_manager: &mut bladvak::ErrorManager,
+    ) {
+        self.svg_is_valid = self.svg_render.update(ui.ctx(), &self.svg).is_ok();
+        let ctx = ui.ctx();
         if self.string_viewer.is_windows {
             let mut current_open = true;
             Window::new(self.string_viewer.title())
@@ -127,7 +273,8 @@ impl eframe::App for GalagoApp {
                 .open(&mut current_open)
                 .resizable(true)
                 .show(ctx, |ui| {
-                    self.string_viewer.show(ui, &mut self.svg, color);
+                    self.string_viewer
+                        .show(ui, &mut self.svg, self.svg_is_valid);
                 });
             self.string_viewer.is_windows = current_open;
         }
@@ -152,123 +299,5 @@ impl eframe::App for GalagoApp {
                     ctx.inspection_ui(ui);
                 });
         }
-        if self.is_sidebar() {
-            egui::panel::SidePanel::right("conf_panel")
-                .frame(
-                    egui::Frame::central_panel(&ctx.style())
-                        .inner_margin(0)
-                        .outer_margin(0),
-                )
-                .min_width(self.settings.min_width_sidebar)
-                .show(ctx, |ui_sidebar| {
-                    egui::ScrollArea::vertical()
-                        .id_salt("right_sidebar")
-                        .show(ui_sidebar, |ui| {
-                            if !self.string_viewer.is_windows {
-                                self.string_viewer.show(ui, &mut self.svg, color);
-                            }
-                            if !self.tree_viewer.is_windows {
-                                if !self.string_viewer.is_windows {
-                                    ui.separator();
-                                }
-                                self.tree_viewer.show(ui, &mut self.svg);
-                            }
-                        });
-                });
-        }
-        egui::CentralPanel::default()
-            .frame(
-                egui::Frame::central_panel(&ctx.style())
-                    .inner_margin(0)
-                    .outer_margin(0),
-            )
-            .show(ctx, |parent_ui| {
-                let rect = parent_ui.available_rect_before_wrap();
-                let response = egui::Scene::new()
-                    .max_inner_size([350.0, 1000.0])
-                    .zoom_range(0.1..=50.0)
-                    .show(parent_ui, &mut self.scene_rect, |ui| {
-                        let painter = ui.painter();
-                        let bg_r: egui::Response = ui.response();
-                        if bg_r.rect.is_finite() {
-                            self.grid.draw(&bg_r.rect, painter);
-                        }
-                        let _response = self.svg_render.show(ui);
-                        // if response.clicked() {
-                        //     println!("SVG clicked!");
-                        // }
-                    })
-                    .response;
-
-                if self.should_reset_view || response.double_clicked() {
-                    let real_rect = Rect::from_two_pos(Pos2::ZERO, (rect.max - rect.min).to_pos2());
-                    self.scene_rect = real_rect;
-                }
-            });
-        match self.file_handler.handle_files(ctx) {
-            Ok(Some(svg_str)) => {
-                self.saved_svg = svg_str.clone();
-                self.svg = svg_str;
-            }
-            Ok(None) => {}
-            Err(err) => {
-                self.error_manager.add_error(err);
-            }
-        }
-        self.error_manager.show(ctx);
-        self.settings.show(ctx, |ui| {
-            ui.checkbox(&mut self.show_inspection, "Debug panel");
-
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(format!("{} settings", self.svg_render.title()));
-                if ui.button("⟳").clicked() {
-                    self.svg_render = SvgRender::new();
-                }
-            });
-            self.svg_render.show_settings(ui);
-
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(format!("{} settings", self.tree_viewer.title()));
-                ui.button("⟳").clicked().then(|| {
-                    self.tree_viewer = TreeViewer::new();
-                });
-            });
-            self.tree_viewer.show_settings(ui);
-
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(format!("{} settings", self.string_viewer.title()));
-                ui.button("⟳").clicked().then(|| {
-                    self.string_viewer = StringViewer::new();
-                });
-            });
-            self.string_viewer.show_settings(ui);
-
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(format!("{} settings", self.grid.title()));
-                ui.button("⟳").clicked().then(|| {
-                    self.grid = Grid::default();
-                });
-            });
-            self.grid.show_settings(ui);
-
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label(format!("{} settings", self.error_manager.title()));
-                ui.button("⟳").clicked().then(|| {
-                    self.error_manager = Default::default();
-                });
-            });
-            self.error_manager.show_settings(ui);
-
-            ui.separator();
-            if ui.button("Default svg").clicked() {
-                self.saved_svg = BASE_SVG.to_string();
-                self.svg = BASE_SVG.to_string();
-            }
-        });
     }
 }

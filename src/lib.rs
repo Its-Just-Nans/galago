@@ -13,11 +13,8 @@
 
 mod app;
 pub use app::GalagoApp;
-mod errors;
-mod file_handler;
 mod grid;
 pub mod path;
-mod settings;
 mod string_viewer;
 mod svg_render;
 mod top_panel;

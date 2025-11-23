@@ -648,9 +648,9 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.0.5"
+version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b4743b7b41ba3be82c18cc13c54334ff8d63476bff26e9df2d5091d50bdc891"
+checksum = "d56015994fe0cda2eaf63176c737b6da43e5e4ba35c339ec61a17d91d74fc781"
 dependencies = [
  "eframe",
  "egui",
@@ -1653,7 +1653,7 @@ dependencies = [
 
 [[package]]
 name = "galago"
-version = "1.1.1"
+version = "1.1.2"
 dependencies = [
  "bladvak",
  "eframe",

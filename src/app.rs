@@ -168,9 +168,14 @@ impl BladvakApp for GalagoApp {
         }
     }
 
-    fn name(&self) -> String {
+    fn name() -> String {
         env!("CARGO_PKG_NAME").to_string()
     }
+
+    fn repo_url() -> String {
+        "https://github.com/Its-Just-Nans/galago".to_string()
+    }
+
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         self.app_central_panel(ui, error_manager)
     }
@@ -264,7 +269,15 @@ impl GalagoApp {
         ui: &mut egui::Ui,
         _error_manager: &mut bladvak::ErrorManager,
     ) {
-        self.svg_is_valid = self.svg_render.update(ui.ctx(), &self.svg).is_ok();
+        self.svg_is_valid = match self.svg_render.update(ui.ctx(), &self.svg) {
+            Ok(_) => true,
+            Err(e) => {
+                if let Some(err) = e {
+                    log::error!("SVG render error: {err}");
+                }
+                false
+            }
+        };
         let ctx = ui.ctx();
         if self.string_viewer.is_windows {
             let mut current_open = true;

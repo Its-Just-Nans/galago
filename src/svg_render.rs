@@ -1,6 +1,7 @@
 //! Svg Render
 use std::{cmp::max, sync::Arc};
 
+use bladvak::AppError;
 use egui::{
     load::SizedTexture, Context, Image, ImageData, Sense, TextureHandle, TextureOptions, Ui,
 };
@@ -62,7 +63,7 @@ impl SvgRender {
     }
 
     /// Update the svg
-    pub fn update(&mut self, ctx: &Context, svg: &str) -> Result<(), ()> {
+    pub fn update(&mut self, ctx: &Context, svg: &str) -> Result<(), Option<AppError>> {
         if !self.need_reload && self.texture_save.is_some() && svg == self.cached_svg {
             return Ok(());
         }
@@ -85,9 +86,11 @@ impl SvgRender {
                 rtree.size().width() as u32 * self.scaler,
                 rtree.size().height() as u32 * self.scaler,
             );
-            let mut pixmap = Pixmap::new(w, h)
-                .ok_or_else(|| format!("Failed to create SVG Pixmap of size {w}x{h}"))
-                .expect("sqdfd");
+            let mut pixmap = Pixmap::new(w, h).ok_or_else(|| {
+                Some(AppError::new(format!(
+                    "Failed to create SVG Pixmap of size {w}x{h}"
+                )))
+            })?;
 
             let transform = resvg::tiny_skia::Transform {
                 sx: self.scaler as f32,
@@ -108,7 +111,7 @@ impl SvgRender {
             self.need_reload = false;
             return Ok(());
         }
-        Err(())
+        Err(None)
     }
 
     /// Show the rendered svg

@@ -1,7 +1,7 @@
 //! String Viewer
 
-use egui::Color32;
-use egui::Ui;
+use bladvak::eframe::egui::{self, Color32};
+use bladvak::egui_extras;
 
 /// String Viewer
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -40,7 +40,7 @@ impl StringViewer {
     }
 
     /// Show settings for String Viewer
-    pub fn show_settings(&mut self, ui: &mut Ui) {
+    pub fn show_settings(&mut self, ui: &mut egui::Ui) {
         ui.checkbox(&mut self.is_windows, "String as windows");
         ui.add(egui::Slider::new(&mut self.theme_font_size, 8.0..=32.0).text("Font Size"))
             .on_hover_text("Font size for the code editor");
@@ -49,7 +49,7 @@ impl StringViewer {
     }
 
     /// Show the String Viewer
-    pub fn show(&self, ui: &mut Ui, svg: &mut String, is_correct: bool) {
+    pub fn show(&self, ui: &mut egui::Ui, svg: &mut String, is_correct: bool) {
         let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
             let mut layout_job = egui_extras::syntax_highlighting::highlight(
                 ui.ctx(),

@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use egui::{Color32, DragValue, Frame, Ui, Window};
-use egui_extras::{Column, TableBuilder};
+use bladvak::eframe::egui::{self, Color32, DragValue, Frame, Ui, Window};
+use bladvak::egui_extras::{Column, TableBuilder};
 use svgtypes::PathSegment;
 use xmltree::Element;
 

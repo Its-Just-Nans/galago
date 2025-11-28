@@ -1,7 +1,7 @@
 //! Svg Render
 use std::{cmp::max, sync::Arc};
 
-use bladvak::AppError;
+use bladvak::{eframe::egui, AppError};
 use egui::{
     load::SizedTexture, Context, Image, ImageData, Sense, TextureHandle, TextureOptions, Ui,
 };

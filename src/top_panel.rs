@@ -1,4 +1,5 @@
 //! Top panel of Galago. Handling the menu and save function
+use bladvak::eframe::egui;
 use std::path::PathBuf;
 
 use crate::GalagoApp;

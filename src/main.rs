@@ -5,7 +5,7 @@ use bladvak::app::Bladvak;
 use galago::GalagoApp;
 
 #[cfg(not(target_arch = "wasm32"))]
-fn main() -> eframe::Result {
+fn main() -> blavak::eframe::Result {
     Bladvak::<GalagoApp>::bladvak_main(&include_bytes!("../assets/icon-256.png")[..])
 }
 

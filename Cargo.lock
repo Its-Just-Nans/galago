@@ -639,9 +639,9 @@ dependencies = [
 
 [[package]]
 name = "bladvak"
-version = "1.0.9"
+version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ab474c5162ba1f5e2193a1cd8846d3a1b5177de1bdcff44e32bdfc84a520634"
+checksum = "25e8e87cc96dccf260722e18e68b36bb64689235bb593a8145568b6380351bbb"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -1616,18 +1616,14 @@ dependencies = [
 
 [[package]]
 name = "galago"
-version = "1.1.4"
+version = "1.1.5"
 dependencies = [
  "bladvak",
- "env_logger",
  "image",
- "js-sys",
  "resvg",
  "serde",
  "svg",
  "svgtypes 0.16.0",
- "wasm-bindgen-futures",
- "web-sys",
  "xmltree",
 ]
 

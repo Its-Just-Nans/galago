@@ -1,7 +1,7 @@
 //! Galago app
 
 use bladvak::eframe::egui::{self, Pos2, Rect, Window};
-use bladvak::{AppError, BladvakApp, eframe, log};
+use bladvak::{eframe, log, AppError, BladvakApp};
 use std::fmt::Debug;
 use std::path::PathBuf;
 

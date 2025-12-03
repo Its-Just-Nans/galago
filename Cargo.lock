@@ -1616,7 +1616,7 @@ dependencies = [
 
 [[package]]
 name = "galago"
-version = "1.1.5"
+version = "1.1.6"
 dependencies = [
  "bladvak",
  "image",

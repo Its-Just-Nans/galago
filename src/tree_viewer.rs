@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use bladvak::eframe::egui::{self, Color32, DragValue, Frame, Ui, Window};
 use bladvak::egui_extras::{Column, TableBuilder};
+use bladvak::ErrorManager;
 use svgtypes::PathSegment;
 use xmltree::Element;
 
@@ -92,7 +93,7 @@ impl TreeViewer {
     }
 
     /// Show Tree Viewer
-    pub fn show(&mut self, ui: &mut Ui, svg_str: &mut String) {
+    pub fn show(&mut self, ui: &mut Ui, svg_str: &mut String, error_manager: &mut ErrorManager) {
         Frame::new()
             .inner_margin(egui::Margin::same(5))
             .show(ui, |ui| {
@@ -110,7 +111,7 @@ impl TreeViewer {
                                 }
                             });
 
-                            self.show_group(ui, &mut e.children, None);
+                            self.show_group(ui, &mut e.children, None, error_manager);
                             let mut buf = Vec::new();
                             if e.write(&mut buf).is_ok() {
                                 if let Ok(s) = String::from_utf8(buf) {
@@ -126,7 +127,13 @@ impl TreeViewer {
     }
 
     /// Show the svg groups
-    fn show_group(&mut self, ui: &mut Ui, nodes: &mut [xmltree::XMLNode], curr_idx: Option<usize>) {
+    fn show_group(
+        &mut self,
+        ui: &mut Ui,
+        nodes: &mut [xmltree::XMLNode],
+        curr_idx: Option<usize>,
+        error_manager: &mut ErrorManager,
+    ) {
         let current_idx = curr_idx.unwrap_or(0);
         for (idx, node) in nodes.iter_mut().enumerate() {
             match node {
@@ -135,7 +142,12 @@ impl TreeViewer {
                         egui::CollapsingHeader::new("Group")
                             .id_salt(format!("group_{idx}"))
                             .show(ui, |ui| {
-                                self.show_group(ui, &mut g.children, Some(current_idx + idx));
+                                self.show_group(
+                                    ui,
+                                    &mut g.children,
+                                    Some(current_idx + idx),
+                                    error_manager,
+                                );
                             });
                     }
                     e => {
@@ -160,12 +172,19 @@ impl TreeViewer {
                                     if let Some(cx) = g.attributes.get("cx") {
                                         if let Some(cy) = g.attributes.get("cy") {
                                             if let Some(r) = g.attributes.get("r") {
-                                                let path_data = circle_to_path(cx, cy, r);
-                                                g.name = "path".to_string();
-                                                g.attributes.insert("d".to_string(), path_data);
-                                                g.attributes.shift_remove("cx");
-                                                g.attributes.shift_remove("cy");
-                                                g.attributes.shift_remove("r");
+                                                match circle_to_path(cx, cy, r) {
+                                                    Ok(path_data) => {
+                                                        g.name = "path".to_string();
+                                                        g.attributes
+                                                            .insert("d".to_string(), path_data);
+                                                        g.attributes.shift_remove("cx");
+                                                        g.attributes.shift_remove("cy");
+                                                        g.attributes.shift_remove("r");
+                                                    }
+                                                    Err(err) => {
+                                                        error_manager.add_error(err);
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -175,13 +194,20 @@ impl TreeViewer {
                                         if let Some(cy) = g.attributes.get("cy") {
                                             if let Some(rx) = g.attributes.get("rx") {
                                                 if let Some(ry) = g.attributes.get("ry") {
-                                                    let path_data = ellipse_to_path(cx, cy, rx, ry);
-                                                    g.name = "path".to_string();
-                                                    g.attributes.insert("d".to_string(), path_data);
-                                                    g.attributes.shift_remove("cx");
-                                                    g.attributes.shift_remove("cy");
-                                                    g.attributes.shift_remove("rx");
-                                                    g.attributes.shift_remove("ry");
+                                                    match ellipse_to_path(cx, cy, rx, ry) {
+                                                        Ok(path_data) => {
+                                                            g.name = "path".to_string();
+                                                            g.attributes
+                                                                .insert("d".to_string(), path_data);
+                                                            g.attributes.shift_remove("cx");
+                                                            g.attributes.shift_remove("cy");
+                                                            g.attributes.shift_remove("rx");
+                                                            g.attributes.shift_remove("ry");
+                                                        }
+                                                        Err(err) => {
+                                                            error_manager.add_error(err);
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -450,7 +476,7 @@ impl TreeViewer {
                                         // ClosePath don't have numbers
                                         return;
                                     }
-                                    let curr_value = path_segment.value();
+                                    let curr_value = path_segment.to_string();
 
                                     if self.edit_path_as_input {
                                         // remove first character from the value

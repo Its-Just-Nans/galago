@@ -18,54 +18,9 @@ fn round_to(value: f64, decimals: u64) -> f64 {
 }
 
 impl SvgItem {
-    /// Is PathSegment Abs
-    pub fn is_abs(&self) -> bool {
-        match self.inner {
-            PathSegment::MoveTo { abs, .. } => abs,
-            PathSegment::LineTo { abs, .. } => abs,
-            PathSegment::HorizontalLineTo { abs, .. } => abs,
-            PathSegment::VerticalLineTo { abs, .. } => abs,
-            PathSegment::CurveTo { abs, .. } => abs,
-            PathSegment::SmoothCurveTo { abs, .. } => abs,
-            PathSegment::Quadratic { abs, .. } => abs,
-            PathSegment::SmoothQuadratic { abs, .. } => abs,
-            PathSegment::EllipticalArc { abs, .. } => abs,
-            PathSegment::ClosePath { abs } => abs,
-        }
-    }
-
-    /// Get the letter of PathSegment
+    /// Returns the letter
     pub fn get_letter(&self) -> char {
-        match self.is_abs() {
-            true => match self.inner {
-                PathSegment::MoveTo { abs: _, .. } => 'M',
-                PathSegment::LineTo { abs: _, .. } => 'L',
-                PathSegment::HorizontalLineTo { abs: _, .. } => 'H',
-                PathSegment::VerticalLineTo { abs: _, .. } => 'V',
-                PathSegment::CurveTo { abs: _, .. } => 'C',
-                PathSegment::SmoothCurveTo { abs: _, .. } => 'S',
-                PathSegment::Quadratic { abs: _, .. } => 'Q',
-                PathSegment::SmoothQuadratic { abs: _, .. } => 'T',
-                PathSegment::EllipticalArc { abs: _, .. } => 'A',
-                PathSegment::ClosePath { abs: _ } => 'Z',
-            },
-            false => match self.inner {
-                PathSegment::MoveTo { abs: _, .. } => 'm',
-                PathSegment::LineTo { abs: _, .. } => 'l',
-                PathSegment::HorizontalLineTo { abs: _, .. } => 'h',
-                PathSegment::VerticalLineTo { abs: _, .. } => 'v',
-                PathSegment::CurveTo { abs: _, .. } => 'c',
-                PathSegment::SmoothCurveTo { abs: _, .. } => 's',
-                PathSegment::Quadratic { abs: _, .. } => 'q',
-                PathSegment::SmoothQuadratic { abs: _, .. } => 't',
-                PathSegment::EllipticalArc { abs: _, .. } => 'a',
-                PathSegment::ClosePath { abs: _ } => 'z',
-            },
-        }
-    }
-    /// Returns the value of the segment as a string.
-    pub fn value(&self) -> String {
-        self.to_string()
+        self.inner.command() as char
     }
 
     /// Returns the value of the segment as a string.
@@ -902,6 +857,7 @@ impl fmt::Display for SvgPath {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
 
     #[test]

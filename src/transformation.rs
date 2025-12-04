@@ -138,6 +138,8 @@
 //     }
 // }
 
+use bladvak::AppError;
+
 /// Convert a polyline string to an SVG path data string
 pub fn polyline_to_path(points: &str) -> String {
     let mut path_data = String::new();
@@ -186,14 +188,18 @@ pub fn rect_to_path(x: &str, y: &str, width: &str, height: &str) -> String {
 }
 
 /// Convert a circle to a path data string
-pub fn circle_to_path(cx: &str, cy: &str, r: &str) -> String {
-    let double_r = r.parse::<f32>().unwrap() * 2.0;
-    format!("M {cx} {cy} m {r}, 0a {r},{r} 0 1,0 -{double_r},0 a {r},{r} 0 1,0 {double_r},0")
+pub fn circle_to_path(cx: &str, cy: &str, r: &str) -> Result<String, AppError> {
+    let double_r = r.parse::<f32>()? * 2.0;
+    let formatted =
+        format!("M {cx} {cy} m {r}, 0a {r},{r} 0 1,0 -{double_r},0 a {r},{r} 0 1,0 {double_r},0");
+    Ok(formatted)
 }
 
 /// Convert an ellipse to a path data string
-pub fn ellipse_to_path(cx: &str, cy: &str, rx: &str, ry: &str) -> String {
-    let double_rx = rx.parse::<f32>().unwrap() * 2.0;
-    let start_x = cx.parse::<f32>().unwrap() - rx.parse::<f32>().unwrap();
-    format!("M{start_x} {cy} a{rx} {ry} 0 1,0 {double_rx} 0 a{rx} {ry} 0 1,0 -{double_rx} 0 Z")
+pub fn ellipse_to_path(cx: &str, cy: &str, rx: &str, ry: &str) -> Result<String, AppError> {
+    let double_rx = rx.parse::<f32>()? * 2.0;
+    let start_x = cx.parse::<f32>()? - rx.parse::<f32>()?;
+    let formatted =
+        format!("M{start_x} {cy} a{rx} {ry} 0 1,0 {double_rx} 0 a{rx} {ry} 0 1,0 -{double_rx} 0 Z");
+    Ok(formatted)
 }

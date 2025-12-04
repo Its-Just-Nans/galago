@@ -226,7 +226,7 @@ impl BladvakApp for GalagoApp {
 
 impl GalagoApp {
     /// Side panel
-    fn app_side_panel(&mut self, ui: &mut egui::Ui, _error_manager: &mut bladvak::ErrorManager) {
+    fn app_side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         egui::ScrollArea::vertical()
             .id_salt("right_sidebar")
             .show(ui, |ui| {
@@ -238,7 +238,7 @@ impl GalagoApp {
                     if !self.string_viewer.is_windows {
                         ui.separator();
                     }
-                    self.tree_viewer.show(ui, &mut self.svg);
+                    self.tree_viewer.show(ui, &mut self.svg, error_manager);
                 }
             });
     }
@@ -273,7 +273,7 @@ impl GalagoApp {
     fn other_central_panel(
         &mut self,
         ui: &mut egui::Ui,
-        _error_manager: &mut bladvak::ErrorManager,
+        error_manager: &mut bladvak::ErrorManager,
     ) {
         self.svg_is_valid = match self.svg_render.update(ui.ctx(), &self.svg) {
             Ok(_) => true,
@@ -307,7 +307,7 @@ impl GalagoApp {
                 .min_height(100.0)
                 .open(&mut current_open)
                 .show(ctx, |ui| {
-                    self.tree_viewer.show(ui, &mut self.svg);
+                    self.tree_viewer.show(ui, &mut self.svg, error_manager);
                 });
             self.tree_viewer.is_windows = current_open;
         }

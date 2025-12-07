@@ -1,7 +1,10 @@
 //! String Viewer
 
+use std::sync::Arc;
+
 use bladvak::eframe::egui::{self, Color32, Frame};
-use bladvak::egui_extras;
+use bladvak::{egui_extras, AppError, ErrorManager};
+use resvg::usvg::WriteOptions;
 
 /// String Viewer
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -49,7 +52,13 @@ impl StringViewer {
     }
 
     /// Show the String Viewer
-    pub fn show(&self, ui: &mut egui::Ui, svg: &mut String, is_correct: bool) {
+    pub fn show(
+        &self,
+        ui: &mut egui::Ui,
+        svg: &mut String,
+        is_correct: bool,
+        error_manager: &mut ErrorManager,
+    ) {
         Frame::new().show(ui, |ui| {
             let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
                 let mut layout_job = egui_extras::syntax_highlighting::highlight(
@@ -81,9 +90,22 @@ impl StringViewer {
                         );
                     }
                 });
-            if ui.button("Copy svg").clicked() {
-                ui.ctx().copy_text(svg.clone());
-            }
+            ui.horizontal(|ui| {
+                if ui.button("Copy svg").clicked() {
+                    ui.ctx().copy_text(svg.clone());
+                }
+                if ui.button("Simplify").clicked() {
+                    match resvg::usvg::Tree::from_str(svg, &resvg::usvg::Options::default()) {
+                        Ok(tree) => *svg = tree.to_string(&WriteOptions::default()),
+                        Err(e) => {
+                            error_manager.add_error(AppError::new_with_source(
+                                "Cannot simplify the svg",
+                                Arc::new(e),
+                            ));
+                        }
+                    }
+                }
+            });
         });
     }
 }

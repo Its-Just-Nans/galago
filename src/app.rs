@@ -220,7 +220,7 @@ impl GalagoApp {
     fn app_side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         if !self.string_viewer.is_windows {
             self.string_viewer
-                .show(ui, &mut self.svg, self.svg_is_valid);
+                .show(ui, &mut self.svg, self.svg_is_valid, error_manager);
         }
         if !self.tree_viewer.is_windows {
             if !self.string_viewer.is_windows {
@@ -281,7 +281,7 @@ impl GalagoApp {
                 .resizable(true)
                 .show(ctx, |ui| {
                     self.string_viewer
-                        .show(ui, &mut self.svg, self.svg_is_valid);
+                        .show(ui, &mut self.svg, self.svg_is_valid, error_manager);
                 });
             self.string_viewer.is_windows = current_open;
         }

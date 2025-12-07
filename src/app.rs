@@ -218,20 +218,16 @@ impl BladvakApp for GalagoApp {
 impl GalagoApp {
     /// Side panel
     fn app_side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
-        egui::ScrollArea::vertical()
-            .id_salt("right_sidebar")
-            .show(ui, |ui| {
-                if !self.string_viewer.is_windows {
-                    self.string_viewer
-                        .show(ui, &mut self.svg, self.svg_is_valid);
-                }
-                if !self.tree_viewer.is_windows {
-                    if !self.string_viewer.is_windows {
-                        ui.separator();
-                    }
-                    self.tree_viewer.show(ui, &mut self.svg, error_manager);
-                }
-            });
+        if !self.string_viewer.is_windows {
+            self.string_viewer
+                .show(ui, &mut self.svg, self.svg_is_valid);
+        }
+        if !self.tree_viewer.is_windows {
+            if !self.string_viewer.is_windows {
+                ui.separator();
+            }
+            self.tree_viewer.show(ui, &mut self.svg, error_manager);
+        }
     }
 
     /// Central panel

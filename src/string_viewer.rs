@@ -1,6 +1,6 @@
 //! String Viewer
 
-use bladvak::eframe::egui::{self, Color32};
+use bladvak::eframe::egui::{self, Color32, Frame};
 use bladvak::egui_extras;
 
 /// String Viewer
@@ -50,44 +50,40 @@ impl StringViewer {
 
     /// Show the String Viewer
     pub fn show(&self, ui: &mut egui::Ui, svg: &mut String, is_correct: bool) {
-        let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
-            let mut layout_job = egui_extras::syntax_highlighting::highlight(
-                ui.ctx(),
-                ui.style(),
-                &self.theme,
-                buf.as_str(),
-                "svg",
-            );
-            layout_job.wrap.max_width = wrap_width;
-            ui.fonts_mut(|f| f.layout_job(layout_job))
-        };
-        let height = ui.ctx().viewport_rect().height();
-        egui::ScrollArea::vertical()
-            .max_height(height / 2.0 - 40.0)
-            .show(ui, |ui| {
-                let multiliner = egui::TextEdit::multiline(svg)
-                    .font(egui::TextStyle::Monospace) // for cursor height
-                    .code_editor()
-                    .desired_rows(10)
-                    .lock_focus(true)
-                    .desired_width(f32::INFINITY);
+        Frame::new().show(ui, |ui| {
+            let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
+                let mut layout_job = egui_extras::syntax_highlighting::highlight(
+                    ui.ctx(),
+                    ui.style(),
+                    &self.theme,
+                    buf.as_str(),
+                    "svg",
+                );
+                layout_job.wrap.max_width = wrap_width;
+                ui.fonts_mut(|f| f.layout_job(layout_job))
+            };
+            let height = ui.ctx().viewport_rect().height();
+            egui::ScrollArea::vertical()
+                .max_height(height / 2.0 - 40.0)
+                .show(ui, |ui| {
+                    let multiliner = egui::TextEdit::multiline(svg)
+                        .font(egui::TextStyle::Monospace) // for cursor height
+                        .code_editor()
+                        .desired_rows(10)
+                        .lock_focus(true)
+                        .desired_width(f32::INFINITY);
 
-                if is_correct {
-                    ui.add(multiliner.layouter(&mut layouter));
-                } else {
-                    ui.add(multiliner.text_color(Color32::RED))
-                        .on_hover_text("The SVG string is not correct, please check the syntax.");
-                }
-            });
-        // egui::ScrollArea::vertical()
-        //     .id_salt("string_viewer")
-        //     .max_height(200.0)
-        //     .show(ui, |ui| {
-        //         let text_edit = TextEdit::multiline(svg).text_color(color);
-        //         ui.add(text_edit);
-        //     });
-        if ui.button("Copy svg").clicked() {
-            ui.ctx().copy_text(svg.clone());
-        }
+                    if is_correct {
+                        ui.add(multiliner.layouter(&mut layouter));
+                    } else {
+                        ui.add(multiliner.text_color(Color32::RED)).on_hover_text(
+                            "The SVG string is not correct, please check the syntax.",
+                        );
+                    }
+                });
+            if ui.button("Copy svg").clicked() {
+                ui.ctx().copy_text(svg.clone());
+            }
+        });
     }
 }

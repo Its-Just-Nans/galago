@@ -25,6 +25,9 @@ pub struct TreeViewer {
     /// Is multi line
     is_multi_line: bool,
 
+    /// Is editable
+    is_editable: bool,
+
     /// Edit as inputs
     edit_path_as_input: bool,
 
@@ -59,6 +62,7 @@ impl Default for TreeViewer {
         Self {
             is_windows: false,
             is_multi_line: true,
+            is_editable: false,
             edit_path_as_input: false,
             ref_group: None,
             translate_x: 0.0,
@@ -95,32 +99,49 @@ impl TreeViewer {
     /// Show Tree Viewer
     pub fn show(&mut self, ui: &mut Ui, svg_str: &mut String, error_manager: &mut ErrorManager) {
         Frame::new()
-            .inner_margin(egui::Margin::same(5))
+            .inner_margin(egui::Margin {
+                left: 5,
+                right: 0, // scrollbar touches the edge
+                top: 5,
+                bottom: 5,
+            })
             .show(ui, |ui| {
                 egui::ScrollArea::vertical()
                     .id_salt("tree_viewer")
-                    .show(ui, |ui| match &mut Element::parse(svg_str.as_bytes()) {
-                        Ok(e) => {
-                            // edit width and height and viewbox
-                            ui.collapsing("SVG", |ui| {
-                                for (key, value) in e.attributes.iter_mut() {
-                                    ui.horizontal(|ui| {
-                                        ui.label(key);
-                                        ui.text_edit_singleline(value);
-                                    });
-                                }
-                            });
+                    .show(ui, |ui| {
+                        ui.set_min_width(ui.available_width());
+                        ui.checkbox(&mut self.is_editable, "Editable");
+                        match &mut Element::parse(svg_str.as_bytes()) {
+                            Ok(e) => {
+                                // edit width and height and viewbox
+                                ui.collapsing("SVG", |ui| {
+                                    for (key, value) in e.attributes.iter_mut() {
+                                        ui.horizontal(|ui| {
+                                            ui.label(key);
+                                            ui.text_edit_singleline(value);
+                                        });
+                                    }
+                                });
 
-                            self.show_group(ui, &mut e.children, None, error_manager);
-                            let mut buf = Vec::new();
-                            if e.write(&mut buf).is_ok() {
-                                if let Ok(s) = String::from_utf8(buf) {
-                                    *svg_str = s;
+                                self.show_group(
+                                    ui,
+                                    &mut e.children,
+                                    None,
+                                    error_manager,
+                                    self.is_editable,
+                                );
+                                if self.is_editable {
+                                    let mut buf = Vec::new();
+                                    if e.write(&mut buf).is_ok() {
+                                        if let Ok(s) = String::from_utf8(buf) {
+                                            *svg_str = s;
+                                        }
+                                    };
                                 }
-                            };
-                        }
-                        Err(e) => {
-                            ui.label(format!("Error: {e:?}"));
+                            }
+                            Err(e) => {
+                                ui.label(format!("Error: {e}"));
+                            }
                         }
                     });
             });
@@ -133,6 +154,7 @@ impl TreeViewer {
         nodes: &mut [xmltree::XMLNode],
         curr_idx: Option<usize>,
         error_manager: &mut ErrorManager,
+        is_editable: bool,
     ) {
         let current_idx = curr_idx.unwrap_or(0);
         for (idx, node) in nodes.iter_mut().enumerate() {
@@ -147,6 +169,7 @@ impl TreeViewer {
                                     &mut g.children,
                                     Some(current_idx + idx),
                                     error_manager,
+                                    is_editable,
                                 );
                             });
                     }
@@ -154,55 +177,35 @@ impl TreeViewer {
                         egui::CollapsingHeader::new(format!("Element: {e}"))
                             .id_salt(format!("element_{idx}"))
                             .show(ui, |ui| {
-                                if e == "path" {
-                                    if ui.button("edit").clicked() {
-                                        match self.ref_group {
-                                            Some(i) if i == idx => {
-                                                self.ref_group = None; // Deselect if already selected
-                                            }
-                                            _ => {
-                                                // Select the current group
-                                                self.ref_group = Some(idx);
-                                            }
-                                        }
-                                    }
-                                } else if e == "circle" && ui.button("Convert to path").clicked() {
-                                    // Convert circle to path logic here
-                                    // For example, you can create a path string based on circle attributes
-                                    if let Some(cx) = g.attributes.get("cx") {
-                                        if let Some(cy) = g.attributes.get("cy") {
-                                            if let Some(r) = g.attributes.get("r") {
-                                                match circle_to_path(cx, cy, r) {
-                                                    Ok(path_data) => {
-                                                        g.name = "path".to_string();
-                                                        g.attributes
-                                                            .insert("d".to_string(), path_data);
-                                                        g.attributes.shift_remove("cx");
-                                                        g.attributes.shift_remove("cy");
-                                                        g.attributes.shift_remove("r");
-                                                    }
-                                                    Err(err) => {
-                                                        error_manager.add_error(err);
-                                                    }
+                                ui.add_enabled_ui(is_editable, |ui| {
+                                    if e == "path" {
+                                        if ui.button("edit").clicked() {
+                                            match self.ref_group {
+                                                Some(i) if i == idx => {
+                                                    self.ref_group = None; // Deselect if already selected
+                                                }
+                                                _ => {
+                                                    // Select the current group
+                                                    self.ref_group = Some(idx);
                                                 }
                                             }
                                         }
-                                    }
-                                } else if e == "ellipse" && ui.button("Convert to path").clicked() {
-                                    // Convert ellipse to path logic here
-                                    if let Some(cx) = g.attributes.get("cx") {
-                                        if let Some(cy) = g.attributes.get("cy") {
-                                            if let Some(rx) = g.attributes.get("rx") {
-                                                if let Some(ry) = g.attributes.get("ry") {
-                                                    match ellipse_to_path(cx, cy, rx, ry) {
+                                    } else if e == "circle"
+                                        && ui.button("Convert to path").clicked()
+                                    {
+                                        // Convert circle to path logic here
+                                        // For example, you can create a path string based on circle attributes
+                                        if let Some(cx) = g.attributes.get("cx") {
+                                            if let Some(cy) = g.attributes.get("cy") {
+                                                if let Some(r) = g.attributes.get("r") {
+                                                    match circle_to_path(cx, cy, r) {
                                                         Ok(path_data) => {
                                                             g.name = "path".to_string();
                                                             g.attributes
                                                                 .insert("d".to_string(), path_data);
                                                             g.attributes.shift_remove("cx");
                                                             g.attributes.shift_remove("cy");
-                                                            g.attributes.shift_remove("rx");
-                                                            g.attributes.shift_remove("ry");
+                                                            g.attributes.shift_remove("r");
                                                         }
                                                         Err(err) => {
                                                             error_manager.add_error(err);
@@ -211,126 +214,168 @@ impl TreeViewer {
                                                 }
                                             }
                                         }
-                                    }
-                                } else if e == "polyline" && ui.button("Convert to path").clicked()
-                                {
-                                    // Convert polyline to path logic here
-                                    if let Some(points) = g.attributes.get("points") {
-                                        let path_data = polyline_to_path(points);
-                                        g.name = "path".to_string();
-                                        g.attributes.insert("d".to_string(), path_data);
-                                        g.attributes.shift_remove("points");
-                                    }
-                                } else if e == "line" && ui.button("Convert to path").clicked() {
-                                    // Convert line to path logic here
-                                    if let Some(x1) = g.attributes.get("x1") {
-                                        if let Some(y1) = g.attributes.get("y1") {
-                                            if let Some(x2) = g.attributes.get("x2") {
-                                                if let Some(y2) = g.attributes.get("y2") {
-                                                    let path_data = line_to_path(x1, y1, x2, y2);
-                                                    g.name = "path".to_string();
-                                                    g.attributes.insert("d".to_string(), path_data);
-                                                    g.attributes.shift_remove("x1");
-                                                    g.attributes.shift_remove("y1");
-                                                    g.attributes.shift_remove("x2");
-                                                    g.attributes.shift_remove("y2");
+                                    } else if e == "ellipse"
+                                        && ui.button("Convert to path").clicked()
+                                    {
+                                        // Convert ellipse to path logic here
+                                        if let Some(cx) = g.attributes.get("cx") {
+                                            if let Some(cy) = g.attributes.get("cy") {
+                                                if let Some(rx) = g.attributes.get("rx") {
+                                                    if let Some(ry) = g.attributes.get("ry") {
+                                                        match ellipse_to_path(cx, cy, rx, ry) {
+                                                            Ok(path_data) => {
+                                                                g.name = "path".to_string();
+                                                                g.attributes.insert(
+                                                                    "d".to_string(),
+                                                                    path_data,
+                                                                );
+                                                                g.attributes.shift_remove("cx");
+                                                                g.attributes.shift_remove("cy");
+                                                                g.attributes.shift_remove("rx");
+                                                                g.attributes.shift_remove("ry");
+                                                            }
+                                                            Err(err) => {
+                                                                error_manager.add_error(err);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else if e == "polyline"
+                                        && ui.button("Convert to path").clicked()
+                                    {
+                                        // Convert polyline to path logic here
+                                        if let Some(points) = g.attributes.get("points") {
+                                            let path_data = polyline_to_path(points);
+                                            g.name = "path".to_string();
+                                            g.attributes.insert("d".to_string(), path_data);
+                                            g.attributes.shift_remove("points");
+                                        }
+                                    } else if e == "line" && ui.button("Convert to path").clicked()
+                                    {
+                                        // Convert line to path logic here
+                                        if let Some(x1) = g.attributes.get("x1") {
+                                            if let Some(y1) = g.attributes.get("y1") {
+                                                if let Some(x2) = g.attributes.get("x2") {
+                                                    if let Some(y2) = g.attributes.get("y2") {
+                                                        let path_data =
+                                                            line_to_path(x1, y1, x2, y2);
+                                                        g.name = "path".to_string();
+                                                        g.attributes
+                                                            .insert("d".to_string(), path_data);
+                                                        g.attributes.shift_remove("x1");
+                                                        g.attributes.shift_remove("y1");
+                                                        g.attributes.shift_remove("x2");
+                                                        g.attributes.shift_remove("y2");
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else if e == "polygon"
+                                        && ui.button("Convert to path").clicked()
+                                    {
+                                        // Convert polygon to path logic here
+                                        if let Some(points) = g.attributes.get("points") {
+                                            let path_data = polygon_to_path(points);
+                                            g.name = "path".to_string();
+                                            g.attributes.insert("d".to_string(), path_data);
+                                            g.attributes.shift_remove("points");
+                                        }
+                                    } else if e == "rect" && ui.button("Convert to path").clicked()
+                                    {
+                                        // Convert rectangle to path logic here
+                                        if let Some(x) = g.attributes.get("x") {
+                                            if let Some(y) = g.attributes.get("y") {
+                                                if let Some(width) = g.attributes.get("width") {
+                                                    if let Some(height) = g.attributes.get("height")
+                                                    {
+                                                        let path_data =
+                                                            rect_to_path(x, y, width, height);
+                                                        g.name = "path".to_string();
+                                                        g.attributes
+                                                            .insert("d".to_string(), path_data);
+                                                        g.attributes.shift_remove("x");
+                                                        g.attributes.shift_remove("y");
+                                                        g.attributes.shift_remove("width");
+                                                        g.attributes.shift_remove("height");
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                } else if e == "polygon" && ui.button("Convert to path").clicked() {
-                                    // Convert polygon to path logic here
-                                    if let Some(points) = g.attributes.get("points") {
-                                        let path_data = polygon_to_path(points);
-                                        g.name = "path".to_string();
-                                        g.attributes.insert("d".to_string(), path_data);
-                                        g.attributes.shift_remove("points");
-                                    }
-                                } else if e == "rect" && ui.button("Convert to path").clicked() {
-                                    // Convert rectangle to path logic here
-                                    if let Some(x) = g.attributes.get("x") {
-                                        if let Some(y) = g.attributes.get("y") {
-                                            if let Some(width) = g.attributes.get("width") {
-                                                if let Some(height) = g.attributes.get("height") {
-                                                    let path_data =
-                                                        rect_to_path(x, y, width, height);
-                                                    g.name = "path".to_string();
-                                                    g.attributes.insert("d".to_string(), path_data);
-                                                    g.attributes.shift_remove("x");
-                                                    g.attributes.shift_remove("y");
-                                                    g.attributes.shift_remove("width");
-                                                    g.attributes.shift_remove("height");
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                TableBuilder::new(ui)
-                                    .column(Column::auto())
-                                    .column(Column::remainder())
-                                    .header(20.0, |mut header| {
-                                        header.col(|ui| {
-                                            ui.heading("attribute");
-                                        });
-                                        header.col(|ui| {
-                                            ui.heading("value");
-                                        });
-                                    })
-                                    .body(|mut body| {
-                                        let mut remove_idx = None;
-                                        for (key, value) in g.attributes.iter_mut() {
-                                            body.row(0.0, |mut row| {
-                                                row.col(|ui| {
-                                                    ui.scope(|ui| {
-                                                        ui.style_mut()
-                                                            .visuals
-                                                            .widgets
-                                                            .hovered
-                                                            .weak_bg_fill = Color32::RED;
+                                    TableBuilder::new(ui)
+                                        .column(Column::auto())
+                                        .column(Column::remainder())
+                                        .header(20.0, |mut header| {
+                                            header.col(|ui| {
+                                                ui.heading("attribute");
+                                            });
+                                            header.col(|ui| {
+                                                ui.heading("value");
+                                            });
+                                        })
+                                        .body(|mut body| {
+                                            let mut remove_idx = None;
+                                            for (key, value) in g.attributes.iter_mut() {
+                                                body.row(0.0, |mut row| {
+                                                    row.col(|ui| {
+                                                        ui.scope(|ui| {
+                                                            ui.style_mut()
+                                                                .visuals
+                                                                .widgets
+                                                                .hovered
+                                                                .weak_bg_fill = Color32::RED;
 
-                                                        if ui
-                                                            .button(key)
-                                                            .on_hover_text("Remove this attribute")
-                                                            .clicked()
-                                                        {
-                                                            remove_idx = Some(key.clone());
+                                                            if ui
+                                                                .button(key)
+                                                                .on_hover_text(
+                                                                    "Remove this attribute",
+                                                                )
+                                                                .clicked()
+                                                            {
+                                                                remove_idx = Some(key.clone());
+                                                            }
+                                                        });
+                                                    });
+                                                    row.col(|ui| {
+                                                        if self.is_multi_line {
+                                                            ui.text_edit_multiline(value);
+                                                        } else {
+                                                            ui.text_edit_singleline(value);
                                                         }
                                                     });
                                                 });
+                                            }
+                                            let key_attr =
+                                                self.attributes_temp.entry(idx).or_default();
+                                            body.row(0.0, |mut row| {
                                                 row.col(|ui| {
-                                                    if self.is_multi_line {
-                                                        ui.text_edit_multiline(value);
-                                                    } else {
-                                                        ui.text_edit_singleline(value);
+                                                    ui.horizontal(|ui| {
+                                                        ui.text_edit_singleline(key_attr);
+                                                    });
+                                                });
+                                                row.col(|ui| {
+                                                    if ui
+                                                        .button("Add key")
+                                                        .on_hover_text("Add new attribute")
+                                                        .clicked()
+                                                        && !key_attr.is_empty()
+                                                    {
+                                                        g.attributes.insert(
+                                                            key_attr.clone(),
+                                                            "".to_string(),
+                                                        );
+                                                        key_attr.clear();
                                                     }
                                                 });
                                             });
-                                        }
-                                        let key_attr = self.attributes_temp.entry(idx).or_default();
-                                        body.row(0.0, |mut row| {
-                                            row.col(|ui| {
-                                                ui.horizontal(|ui| {
-                                                    ui.text_edit_singleline(key_attr);
-                                                });
-                                            });
-                                            row.col(|ui| {
-                                                if ui
-                                                    .button("Add key")
-                                                    .on_hover_text("Add new attribute")
-                                                    .clicked()
-                                                    && !key_attr.is_empty()
-                                                {
-                                                    g.attributes
-                                                        .insert(key_attr.clone(), "".to_string());
-                                                    key_attr.clear();
-                                                }
-                                            });
-                                        });
 
-                                        if let Some(idx) = remove_idx {
-                                            g.attributes.shift_remove(&idx);
-                                        }
-                                    });
+                                            if let Some(idx) = remove_idx {
+                                                g.attributes.shift_remove(&idx);
+                                            }
+                                        });
+                                });
                             });
                         if let Some(index) = self.ref_group {
                             if *e == *"path" && index == idx {
@@ -340,10 +385,19 @@ impl TreeViewer {
                     }
                 },
                 xmltree::XMLNode::Text(t) => {
-                    egui::CollapsingHeader::new("Path")
+                    egui::CollapsingHeader::new("Text")
                         .id_salt(format!("text_{idx}"))
                         .show(ui, |ui| {
                             ui.label(format!("Text: {t}"));
+                        });
+                }
+                xmltree::XMLNode::Comment(comment_value) => {
+                    egui::CollapsingHeader::new("Comment")
+                        .id_salt(format!("comment_{idx}"))
+                        .show(ui, |ui| {
+                            ui.add_enabled_ui(is_editable, |ui| {
+                                ui.text_edit_singleline(comment_value);
+                            });
                         });
                 }
                 _ => {

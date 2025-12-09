@@ -15,10 +15,9 @@
 
 mod app;
 pub use app::GalagoApp;
-mod grid;
+mod central_panel;
 pub mod path;
 mod string_viewer;
 mod svg_render;
 mod top_panel;
-mod transformation;
 mod tree_viewer;

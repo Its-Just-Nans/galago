@@ -1,13 +1,12 @@
 //! Galago app
 
-use bladvak::eframe::egui::{self, Pos2, Rect, Window};
-use bladvak::{eframe, log, AppError, BladvakApp};
+use bladvak::eframe::egui::{self};
+use bladvak::utils::grid::Grid;
+use bladvak::{eframe, AppError, BladvakApp};
 use std::fmt::Debug;
 use std::path::PathBuf;
 
-use crate::{
-    grid::Grid, string_viewer::StringViewer, svg_render::SvgRender, tree_viewer::TreeViewer,
-};
+use crate::{string_viewer::StringViewer, svg_render::SvgRender, tree_viewer::TreeViewer};
 
 /// GalagoApp struct
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -21,26 +20,22 @@ pub struct GalagoApp {
 
     /// Current scene zoom
     #[serde(skip)]
-    scene_rect: egui::Rect,
+    pub(crate) scene_rect: egui::Rect,
 
     /// TreeViewer Ui
-    tree_viewer: TreeViewer,
+    pub(crate) tree_viewer: TreeViewer,
 
     /// StringViewer Ui
-    string_viewer: StringViewer,
+    pub(crate) string_viewer: StringViewer,
 
     /// Grid options
-    grid: Grid,
+    pub(crate) grid: Grid,
 
     /// SvgRender
-    svg_render: SvgRender,
+    pub(crate) svg_render: SvgRender,
 
     /// should reset the view
     pub(crate) should_reset_view: bool,
-
-    /// Debug and inspection toggle
-    #[serde(skip)]
-    show_inspection: bool,
 
     /// Path to save the svg
     pub save_path: Option<PathBuf>,
@@ -63,7 +58,6 @@ impl Default for GalagoApp {
             svg_render: SvgRender::new(),
             should_reset_view: false,
             save_path: None,
-            show_inspection: false,
             svg_is_valid: true,
         }
     }
@@ -163,6 +157,10 @@ impl BladvakApp for GalagoApp {
         env!("CARGO_PKG_NAME").to_string()
     }
 
+    fn version() -> String {
+        env!("CARGO_PKG_VERSION").to_string()
+    }
+
     fn repo_url() -> String {
         "https://github.com/Its-Just-Nans/galago".to_string()
     }
@@ -227,84 +225,6 @@ impl GalagoApp {
                 ui.separator();
             }
             self.tree_viewer.show(ui, &mut self.svg, error_manager);
-        }
-    }
-
-    /// Central panel
-    fn app_central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
-        self.other_central_panel(ui, error_manager);
-        let rect = ui.available_rect_before_wrap();
-        let response = egui::Scene::new()
-            .max_inner_size([350.0, 1000.0])
-            .zoom_range(0.1..=50.0)
-            .show(ui, &mut self.scene_rect, |ui| {
-                let painter = ui.painter();
-                let bg_r: egui::Response = ui.response();
-                if bg_r.rect.is_finite() {
-                    self.grid.draw(&bg_r.rect, painter);
-                }
-                let _response = self.svg_render.show(ui);
-                // if response.clicked() {
-                //     println!("SVG clicked!");
-                // }
-            })
-            .response;
-
-        if self.should_reset_view || response.double_clicked() {
-            let real_rect = Rect::from_two_pos(Pos2::ZERO, (rect.max - rect.min).to_pos2());
-            self.scene_rect = real_rect;
-        }
-    }
-
-    /// Other central panel
-    fn other_central_panel(
-        &mut self,
-        ui: &mut egui::Ui,
-        error_manager: &mut bladvak::ErrorManager,
-    ) {
-        self.svg_is_valid = match self.svg_render.update(ui.ctx(), &self.svg) {
-            Ok(_) => true,
-            Err(e) => {
-                if let Some(err) = e {
-                    log::error!("SVG render error: {err}");
-                }
-                false
-            }
-        };
-        let ctx = ui.ctx();
-        if self.string_viewer.is_windows {
-            let mut current_open = true;
-            Window::new(self.string_viewer.title())
-                .min_width(500.0)
-                .min_height(100.0)
-                .open(&mut current_open)
-                .resizable(true)
-                .show(ctx, |ui| {
-                    self.string_viewer
-                        .show(ui, &mut self.svg, self.svg_is_valid, error_manager);
-                });
-            self.string_viewer.is_windows = current_open;
-        }
-        if self.tree_viewer.is_windows {
-            let mut current_open = true;
-
-            Window::new(self.tree_viewer.title())
-                .resizable(true)
-                .min_width(500.0)
-                .min_height(100.0)
-                .open(&mut current_open)
-                .show(ctx, |ui| {
-                    self.tree_viewer.show(ui, &mut self.svg, error_manager);
-                });
-            self.tree_viewer.is_windows = current_open;
-        }
-        if self.show_inspection {
-            egui::Window::new("Inspection")
-                .open(&mut self.show_inspection)
-                .vscroll(true)
-                .show(ctx, |ui| {
-                    ctx.inspection_ui(ui);
-                });
         }
     }
 }

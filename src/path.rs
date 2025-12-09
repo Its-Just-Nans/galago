@@ -2,7 +2,6 @@
 //! Good reading https://razrfalcon.github.io/notes-on-svg-parsing/path-data.html
 
 use std::fmt;
-
 use svgtypes::{PathParser, PathSegment};
 
 /// Represents a single SVG path segment.
@@ -853,6 +852,83 @@ impl fmt::Display for SvgPath {
         }
         write!(f, "{result}")
     }
+}
+
+/// Convert a polyline string to an SVG path data string
+pub fn polyline_to_path(points: &str) -> String {
+    let mut path_data = String::new();
+    let mut first = true;
+    let all_points = points.split_whitespace().collect::<Vec<&str>>();
+    for idx in (0..all_points.len()).step_by(2) {
+        let coords1 = all_points[idx];
+        let coords2 = all_points[idx + 1];
+        if first {
+            path_data.push_str(&format!("M {coords1} {coords2}"));
+            first = false;
+        } else {
+            path_data.push_str(&format!(" L {coords1} {coords2}"));
+        }
+    }
+    path_data
+}
+
+/// Convert a line string to an SVG path data string
+pub fn line_to_path(x1: &str, y1: &str, x2: &str, y2: &str) -> String {
+    format!("M {x1} {y1} L {x2} {y2}")
+}
+
+/// Convert a polygon string to an SVG path data string
+pub fn polygon_to_path(points: &str) -> String {
+    let mut path_data = String::new();
+    let mut first = true;
+    let all_points = points.split_whitespace().collect::<Vec<&str>>();
+    for idx in (0..all_points.len()).step_by(2) {
+        let coords1 = all_points[idx];
+        let coords2 = all_points[idx + 1];
+        if first {
+            path_data.push_str(&format!("M {coords1} {coords2}"));
+            first = false;
+        } else {
+            path_data.push_str(&format!(" L {coords1} {coords2}"));
+        }
+    }
+    path_data.push('Z'); // Close the polygon
+    path_data
+}
+
+/// Convert a svg rect to a path data string
+pub fn rect_to_path(x: &str, y: &str, width: &str, height: &str) -> String {
+    format!("M {x} {y} h {width} v {height} h -{width} Z")
+}
+
+/// Convert a circle to a path data string
+/// # Errors
+/// Return error if fail to parse
+pub fn circle_to_path(cx: &str, cy: &str, r: &str) -> Result<String, String> {
+    let r = r
+        .parse::<f32>()
+        .map_err(|e| format!("Error formatting r : {e}"))?;
+    let double_r = r * 2.0;
+    let formatted =
+        format!("M {cx} {cy} m {r}, 0a {r},{r} 0 1,0 -{double_r},0 a {r},{r} 0 1,0 {double_r},0");
+    Ok(formatted)
+}
+
+/// Convert an ellipse to a path data string
+/// # Errors
+/// Return error if fail to parse
+pub fn ellipse_to_path(cx: &str, cy: &str, rx: &str, ry: &str) -> Result<String, String> {
+    let rx = rx
+        .parse::<f32>()
+        .map_err(|e| format!("Error formatting rx : {e}"))?;
+    let cx = cx
+        .parse::<f32>()
+        .map_err(|e| format!("Error formatting cx : {e}"))?;
+    let double_rx = rx * 2.0;
+    let start_x = cx - rx;
+    let formatted =
+        format!("M{start_x} {cy} a{rx} {ry} 0 1,0 {double_rx} 0 a{rx} {ry} 0 1,0 -{double_rx} 0 Z");
+    Ok(formatted)
 }
 
 #[cfg(test)]

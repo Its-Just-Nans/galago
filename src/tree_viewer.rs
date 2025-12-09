@@ -8,12 +8,9 @@ use bladvak::ErrorManager;
 use svgtypes::PathSegment;
 use xmltree::Element;
 
-use crate::{
-    path::SvgPath,
-    transformation::{
-        circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
-        rect_to_path,
-    },
+use crate::path::{
+    circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path, rect_to_path,
+    SvgPath,
 };
 
 /// TreeViewer Struct

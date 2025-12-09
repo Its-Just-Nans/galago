@@ -2,15 +2,15 @@
 
 use std::collections::HashMap;
 
+use bladvak::ErrorManager;
 use bladvak::eframe::egui::{self, Color32, DragValue, Frame, Ui, Window};
 use bladvak::egui_extras::{Column, TableBuilder};
-use bladvak::ErrorManager;
 use svgtypes::PathSegment;
 use xmltree::Element;
 
 use crate::path::{
-    circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path, rect_to_path,
-    SvgPath,
+    SvgPath, circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
+    rect_to_path,
 };
 
 /// TreeViewer Struct
@@ -129,10 +129,10 @@ impl TreeViewer {
                                 );
                                 if self.is_editable {
                                     let mut buf = Vec::new();
-                                    if e.write(&mut buf).is_ok() {
-                                        if let Ok(s) = String::from_utf8(buf) {
-                                            *svg_str = s;
-                                        }
+                                    if e.write(&mut buf).is_ok()
+                                        && let Ok(s) = String::from_utf8(buf)
+                                    {
+                                        *svg_str = s;
                                     };
                                 }
                             }
@@ -187,55 +187,46 @@ impl TreeViewer {
                                                 }
                                             }
                                         }
-                                    } else if e == "circle"
-                                        && ui.button("Convert to path").clicked()
-                                    {
+                                    } else if e == "circle" {
                                         // Convert circle to path logic here
                                         // For example, you can create a path string based on circle attributes
-                                        if let Some(cx) = g.attributes.get("cx") {
-                                            if let Some(cy) = g.attributes.get("cy") {
-                                                if let Some(r) = g.attributes.get("r") {
-                                                    match circle_to_path(cx, cy, r) {
-                                                        Ok(path_data) => {
-                                                            g.name = "path".to_string();
-                                                            g.attributes
-                                                                .insert("d".to_string(), path_data);
-                                                            g.attributes.shift_remove("cx");
-                                                            g.attributes.shift_remove("cy");
-                                                            g.attributes.shift_remove("r");
-                                                        }
-                                                        Err(err) => {
-                                                            error_manager.add_error(err);
-                                                        }
-                                                    }
+                                        if let Some(cx) = g.attributes.get("cx")
+                                            && let Some(cy) = g.attributes.get("cy")
+                                            && let Some(r) = g.attributes.get("r")
+                                            && ui.button("Convert to path").clicked()
+                                        {
+                                            match circle_to_path(cx, cy, r) {
+                                                Ok(path_data) => {
+                                                    g.name = "path".to_string();
+                                                    g.attributes.insert("d".to_string(), path_data);
+                                                    g.attributes.shift_remove("cx");
+                                                    g.attributes.shift_remove("cy");
+                                                    g.attributes.shift_remove("r");
+                                                }
+                                                Err(err) => {
+                                                    error_manager.add_error(err);
                                                 }
                                             }
                                         }
-                                    } else if e == "ellipse"
-                                        && ui.button("Convert to path").clicked()
-                                    {
+                                    } else if e == "ellipse" {
                                         // Convert ellipse to path logic here
-                                        if let Some(cx) = g.attributes.get("cx") {
-                                            if let Some(cy) = g.attributes.get("cy") {
-                                                if let Some(rx) = g.attributes.get("rx") {
-                                                    if let Some(ry) = g.attributes.get("ry") {
-                                                        match ellipse_to_path(cx, cy, rx, ry) {
-                                                            Ok(path_data) => {
-                                                                g.name = "path".to_string();
-                                                                g.attributes.insert(
-                                                                    "d".to_string(),
-                                                                    path_data,
-                                                                );
-                                                                g.attributes.shift_remove("cx");
-                                                                g.attributes.shift_remove("cy");
-                                                                g.attributes.shift_remove("rx");
-                                                                g.attributes.shift_remove("ry");
-                                                            }
-                                                            Err(err) => {
-                                                                error_manager.add_error(err);
-                                                            }
-                                                        }
-                                                    }
+                                        if let Some(cx) = g.attributes.get("cx")
+                                            && let Some(cy) = g.attributes.get("cy")
+                                            && let Some(rx) = g.attributes.get("rx")
+                                            && let Some(ry) = g.attributes.get("ry")
+                                            && ui.button("Convert to path").clicked()
+                                        {
+                                            match ellipse_to_path(cx, cy, rx, ry) {
+                                                Ok(path_data) => {
+                                                    g.name = "path".to_string();
+                                                    g.attributes.insert("d".to_string(), path_data);
+                                                    g.attributes.shift_remove("cx");
+                                                    g.attributes.shift_remove("cy");
+                                                    g.attributes.shift_remove("rx");
+                                                    g.attributes.shift_remove("ry");
+                                                }
+                                                Err(err) => {
+                                                    error_manager.add_error(err);
                                                 }
                                             }
                                         }
@@ -249,25 +240,21 @@ impl TreeViewer {
                                             g.attributes.insert("d".to_string(), path_data);
                                             g.attributes.shift_remove("points");
                                         }
-                                    } else if e == "line" && ui.button("Convert to path").clicked()
-                                    {
+                                    } else if e == "line" {
                                         // Convert line to path logic here
-                                        if let Some(x1) = g.attributes.get("x1") {
-                                            if let Some(y1) = g.attributes.get("y1") {
-                                                if let Some(x2) = g.attributes.get("x2") {
-                                                    if let Some(y2) = g.attributes.get("y2") {
-                                                        let path_data =
-                                                            line_to_path(x1, y1, x2, y2);
-                                                        g.name = "path".to_string();
-                                                        g.attributes
-                                                            .insert("d".to_string(), path_data);
-                                                        g.attributes.shift_remove("x1");
-                                                        g.attributes.shift_remove("y1");
-                                                        g.attributes.shift_remove("x2");
-                                                        g.attributes.shift_remove("y2");
-                                                    }
-                                                }
-                                            }
+                                        if let Some(x1) = g.attributes.get("x1")
+                                            && let Some(y1) = g.attributes.get("y1")
+                                            && let Some(x2) = g.attributes.get("x2")
+                                            && let Some(y2) = g.attributes.get("y2")
+                                            && ui.button("Convert to path").clicked()
+                                        {
+                                            let path_data = line_to_path(x1, y1, x2, y2);
+                                            g.name = "path".to_string();
+                                            g.attributes.insert("d".to_string(), path_data);
+                                            g.attributes.shift_remove("x1");
+                                            g.attributes.shift_remove("y1");
+                                            g.attributes.shift_remove("x2");
+                                            g.attributes.shift_remove("y2");
                                         }
                                     } else if e == "polygon"
                                         && ui.button("Convert to path").clicked()
@@ -279,25 +266,22 @@ impl TreeViewer {
                                             g.attributes.insert("d".to_string(), path_data);
                                             g.attributes.shift_remove("points");
                                         }
-                                    } else if e == "rect" && ui.button("Convert to path").clicked()
-                                    {
+                                    } else if e == "rect" {
                                         // Convert rectangle to path logic here
-                                        if let Some(x) = g.attributes.get("x") {
-                                            if let Some(y) = g.attributes.get("y") {
-                                                if let Some(width) = g.attributes.get("width") {
-                                                    if let Some(height) = g.attributes.get("height")
-                                                    {
-                                                        let path_data =
-                                                            rect_to_path(x, y, width, height);
-                                                        g.name = "path".to_string();
-                                                        g.attributes
-                                                            .insert("d".to_string(), path_data);
-                                                        g.attributes.shift_remove("x");
-                                                        g.attributes.shift_remove("y");
-                                                        g.attributes.shift_remove("width");
-                                                        g.attributes.shift_remove("height");
-                                                    }
-                                                }
+                                        if let Some(x) = g.attributes.get("x")
+                                            && let Some(y) = g.attributes.get("y")
+                                            && let Some(width) = g.attributes.get("width")
+                                            && let Some(height) = g.attributes.get("height")
+                                            && ui.button("Convert to path").clicked()
+                                        {
+                                            {
+                                                let path_data = rect_to_path(x, y, width, height);
+                                                g.name = "path".to_string();
+                                                g.attributes.insert("d".to_string(), path_data);
+                                                g.attributes.shift_remove("x");
+                                                g.attributes.shift_remove("y");
+                                                g.attributes.shift_remove("width");
+                                                g.attributes.shift_remove("height");
                                             }
                                         }
                                     }
@@ -374,10 +358,11 @@ impl TreeViewer {
                                         });
                                 });
                             });
-                        if let Some(index) = self.ref_group {
-                            if *e == *"path" && index == idx {
-                                self.show_current_edition(ui.ctx(), g);
-                            }
+                        if let Some(index) = self.ref_group
+                            && *e == *"path"
+                            && index == idx
+                        {
+                            self.show_current_edition(ui.ctx(), g);
                         }
                     }
                 },
@@ -561,11 +546,10 @@ impl TreeViewer {
                             if let Some(idx) = idx_to_update {
                                 parsed_path.toggle_coord_type_at(idx);
                                 *path = parsed_path.to_string();
-                            } else if let Some((idx, val)) = item_edit {
-                                if let Ok(new_path) = parsed_path.try_replace_element_at(idx, &val)
-                                {
-                                    *path = new_path;
-                                }
+                            } else if let Some((idx, val)) = item_edit
+                                && let Ok(new_path) = parsed_path.try_replace_element_at(idx, &val)
+                            {
+                                *path = new_path;
                             }
                         });
                 } else {

@@ -2,7 +2,7 @@
 
 use bladvak::eframe::egui::{self};
 use bladvak::utils::grid::Grid;
-use bladvak::{eframe, AppError, BladvakApp};
+use bladvak::{AppError, BladvakApp, eframe};
 use std::fmt::Debug;
 use std::path::PathBuf;
 
@@ -199,10 +199,10 @@ impl BladvakApp for GalagoApp {
             match save_path {
                 Ok(save_p) => {
                     self.save_path = save_p.clone();
-                    if let Some(path_to_save) = save_p {
-                        if let Err(err) = self.save_svg(&path_to_save) {
-                            error_manager.add_error(err);
-                        }
+                    if let Some(path_to_save) = save_p
+                        && let Err(err) = self.save_svg(&path_to_save)
+                    {
+                        error_manager.add_error(err);
                     }
                 }
                 Err(e) => {

@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use bladvak::eframe::egui::{self, Color32, Frame};
-use bladvak::{egui_extras, AppError, ErrorManager};
+use bladvak::{AppError, ErrorManager, egui_extras};
 use resvg::usvg::WriteOptions;
 
 /// String Viewer

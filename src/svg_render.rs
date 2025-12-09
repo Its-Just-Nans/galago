@@ -1,9 +1,9 @@
 //! Svg Render
 use std::{cmp::max, sync::Arc};
 
-use bladvak::{eframe::egui, AppError};
+use bladvak::{AppError, eframe::egui};
 use egui::{
-    load::SizedTexture, Context, Image, ImageData, Sense, TextureHandle, TextureOptions, Ui,
+    Context, Image, ImageData, Sense, TextureHandle, TextureOptions, Ui, load::SizedTexture,
 };
 use resvg::tiny_skia::Pixmap;
 

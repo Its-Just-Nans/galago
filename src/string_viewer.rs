@@ -45,8 +45,13 @@ impl StringViewer {
     /// Show settings for String Viewer
     pub fn show_settings(&mut self, ui: &mut egui::Ui) {
         ui.checkbox(&mut self.is_windows, "String as windows");
-        ui.add(egui::Slider::new(&mut self.theme_font_size, 8.0..=32.0).text("Font Size"))
-            .on_hover_text("Font size for the code editor");
+        if ui
+            .add(egui::Slider::new(&mut self.theme_font_size, 8.0..=32.0).text("Font Size"))
+            .on_hover_text("Font size for the code editor")
+            .changed()
+        {
+            // TODO wait for https://github.com/emilk/egui/pull/7684
+        }
         self.theme.ui(ui);
         self.theme.clone().store_in_memory(ui.ctx());
     }
@@ -76,7 +81,7 @@ impl StringViewer {
                 .max_height(height / 2.0 - 40.0)
                 .show(ui, |ui| {
                     let multiliner = egui::TextEdit::multiline(svg)
-                        .font(egui::TextStyle::Monospace) // for cursor height
+                        .font(egui::FontId::monospace(self.theme_font_size)) // for cursor height
                         .code_editor()
                         .desired_rows(10)
                         .lock_focus(true)

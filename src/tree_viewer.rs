@@ -6,7 +6,7 @@ use bladvak::ErrorManager;
 use bladvak::eframe::egui::{self, Color32, DragValue, Frame, Ui, Window};
 use bladvak::egui_extras::{Column, TableBuilder};
 use svgtypes::PathSegment;
-use xmltree::Element;
+use xmltree::{Element, EmitterConfig};
 
 use crate::path::{
     SvgPath, circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
@@ -48,6 +48,8 @@ pub struct TreeViewer {
     rotate: f64,
     /// Round to value
     round_to: u64,
+    /// Name of the tew element to add
+    new_element_name: String,
 
     /// Attributes of the tree viewer
     #[serde(skip)]
@@ -71,6 +73,7 @@ impl Default for TreeViewer {
             rotate: 0.0,
             round_to: 1,
             attributes_temp: HashMap::new(),
+            new_element_name: String::new(),
         }
     }
 }
@@ -107,7 +110,7 @@ impl TreeViewer {
                     .id_salt("tree_viewer")
                     .show(ui, |ui| {
                         ui.set_min_width(ui.available_width());
-                        ui.checkbox(&mut self.is_editable, "Editable");
+                        ui.checkbox(&mut self.is_editable, "Editable (auto-write)");
                         match &mut Element::parse(svg_str.as_bytes()) {
                             Ok(e) => {
                                 // edit width and height and viewbox
@@ -127,9 +130,30 @@ impl TreeViewer {
                                     error_manager,
                                     self.is_editable,
                                 );
+                                ui.add_enabled_ui(self.is_editable, |ui| {
+                                    ui.horizontal(|ui| {
+                                        ui.text_edit_singleline(&mut self.new_element_name);
+                                        if ui
+                                            .button("Add key")
+                                            .on_hover_text("Add new attribute")
+                                            .clicked()
+                                            && !self.new_element_name.is_empty()
+                                        {
+                                            e.children.push(xmltree::XMLNode::Element(
+                                                Element::new(&self.new_element_name),
+                                            ));
+                                            self.new_element_name = Default::default();
+                                        }
+                                    });
+                                });
+
                                 if self.is_editable {
                                     let mut buf = Vec::new();
-                                    if e.write(&mut buf).is_ok()
+                                    let writer_config = EmitterConfig {
+                                        perform_indent: true,
+                                        ..EmitterConfig::new()
+                                    };
+                                    if e.write_with_config(&mut buf, writer_config).is_ok()
                                         && let Ok(s) = String::from_utf8(buf)
                                     {
                                         *svg_str = s;
@@ -171,7 +195,12 @@ impl TreeViewer {
                             });
                     }
                     e => {
-                        egui::CollapsingHeader::new(format!("Element: {e}"))
+                        let name = if let Some(id) = g.attributes.get("id") {
+                            &format!("{e} ({id})")
+                        } else {
+                            e
+                        };
+                        egui::CollapsingHeader::new(format!("Element: {name}"))
                             .id_salt(format!("element_{idx}"))
                             .show(ui, |ui| {
                                 ui.add_enabled_ui(is_editable, |ui| {

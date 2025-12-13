@@ -15,7 +15,7 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                   profile: minimal
-                  toolchain: stable
+                  toolchain: 1.91.0
                   override: true
             - uses: actions-rs/cargo@v1
               with:
@@ -30,7 +30,7 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                   profile: minimal
-                  toolchain: stable
+                  toolchain: 1.91.0
                   target: wasm32-unknown-unknown
                   override: true
             - uses: actions-rs/cargo@v1
@@ -46,7 +46,7 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                   profile: minimal
-                  toolchain: stable
+                  toolchain: 1.91.0
                   override: true
             - run: sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
             - uses: actions-rs/cargo@v1
@@ -62,7 +62,7 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                   profile: minimal
-                  toolchain: stable
+                  toolchain: 1.91.0
                   override: true
                   components: rustfmt
             - uses: actions-rs/cargo@v1
@@ -78,7 +78,7 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                   profile: minimal
-                  toolchain: stable
+                  toolchain: 1.91.0
                   override: true
                   components: clippy
             - uses: actions-rs/cargo@v1
@@ -134,7 +134,7 @@ jobs:
             - uses: actions/checkout@master
             - uses: actions-rs/toolchain@v1.0.1
               with:
-                  toolchain: stable
+                  toolchain: 1.91.0
                   target: ${{ matrix.TARGET }}
                   override: true
 

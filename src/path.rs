@@ -613,13 +613,13 @@ impl SvgPath {
     }
 
     /// Toggles the coordinate type (absolute/relative) of the path segment at the given index.
-    pub fn toggle_coord_type_at(&mut self, i: usize) {
+    pub fn toggle_coord_type_at(&mut self, index: usize) {
         let mut pos = (0.0, 0.0);
         let mut subpath_start = (0.0, 0.0);
 
         // We need to recalculate the position up to item i
         for (j, item) in self.items.iter_mut().enumerate() {
-            if j == i {
+            if j == index {
                 match &mut item.inner {
                     PathSegment::MoveTo { abs, x, y } => {
                         if *abs {
@@ -966,5 +966,60 @@ mod tests {
             parsed_relative.to_string(),
             "M174 270C113 271 84 237 80 207C78 189 79 172 76 172C46 154 34 142 21 109C-4 49 45 62 55 66C71 72 79 83 90 94C103 104 160 104 174 104ZM110 150C104 153 98 160 95 166S92 184 95 190C103 208 126 216 142 205C149 200 153 195 155 188C161 172 150 153 133 147C128 145 115 147 110 150ZM174 270C236 271 265 237 269 207C271 189 270 172 273 172C303 154 315 142 328 109C353 49 304 62 294 66C278 72 270 83 259 94C246 104 189 104 174 104ZM239 150C245 153 251 160 254 166S257 184 254 190C246 208 223 216 207 205C200 200 196 195 194 188C188 172 199 153 216 147C221 145 234 147 239 150Z"
         );
+    }
+
+    #[test]
+    fn test_toggle_coord_type_at() {
+        let mut parsed = SvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104Z").unwrap();
+        let len = parsed.items.len();
+        assert_eq!(len, 8);
+        for i in 0..len {
+            parsed.toggle_coord_type_at(i);
+        }
+        assert_eq!(
+            parsed.to_string(),
+            "m174 270c-61 1 -90 -33 -94 -63c-2 -18 -1 -35 -4 -35c-30 -18 -42 -30 -55 -63c-25 -60 24 -47 34 -43c16 6 24 17 35 28c13 10 70 10 84 10z"
+        );
+    }
+
+    #[test]
+    fn test_polyline_to_path() {
+        // <polyline points="0,100 50,25 50,75 100,0" />
+        let path_data = polyline_to_path("0,100 50,25 50,75 100,0");
+        assert_eq!(path_data, "M 0,100 50,25 L 50,75 100,0")
+    }
+
+    #[test]
+    fn test_line_to_path() {
+        // <line x1="0" y1="80" x2="100" y2="20" />
+        let path_data = line_to_path("0", "0", "80", "20");
+        assert_eq!(path_data, "M 0 0 L 80 20")
+    }
+
+    #[test]
+    fn test_polygon_to_path() {
+        // <polygon points="0,100 50,25 50,75 100,0" />
+        let path_data = polygon_to_path("0,100 50,25 50,75 100,0");
+        assert_eq!(path_data, "M 0,100 50,25 L 50,75 100,0Z")
+    }
+
+    #[test]
+    fn test_circle_to_path() {
+        // <circle cx="50" cy="50" r="50" />
+        let path_data = circle_to_path("50", "50", "50").unwrap();
+        assert_eq!(
+            path_data,
+            "M 50 50 m 50, 0a 50,50 0 1,0 -100,0 a 50,50 0 1,0 100,0"
+        )
+    }
+
+    #[test]
+    fn test_ellipse_to_path() {
+        // <ellipse cx="100" cy="50" rx="100" ry="50" />
+        let path_data = ellipse_to_path("100", "50", "100", "50").unwrap();
+        assert_eq!(
+            path_data,
+            "M0 50 a100 50 0 1,0 200 0 a100 50 0 1,0 -200 0 Z"
+        )
     }
 }

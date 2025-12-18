@@ -1,9 +1,13 @@
 //! Svg Render
-use std::{cmp::max, sync::Arc};
+use std::sync::Arc;
 
-use bladvak::{AppError, eframe::egui};
+use bladvak::{
+    AppError,
+    eframe::{egui, epaint::RectShape},
+};
 use egui::{
-    Context, Image, ImageData, Sense, TextureHandle, TextureOptions, Ui, load::SizedTexture,
+    Color32, Context, CornerRadius, ImageData, ImageFit, ImageSize, Rect, Sense, TextureHandle,
+    TextureOptions, Ui, Vec2, WidgetInfo, WidgetType, pos2,
 };
 use resvg::tiny_skia::Pixmap;
 
@@ -71,7 +75,7 @@ impl SvgRender {
         if let Ok(rtree) = resvg::usvg::Tree::from_str(svg, &resvg::usvg::Options::default()) {
             if self.auto_scale {
                 // Calculate the sizer based on the SVG size
-                let size = max(rtree.size().width() as u32, rtree.size().height() as u32);
+                let size = rtree.size().width().max(rtree.size().height()) as u32;
                 if size < 500 {
                     self.scaler = 6;
                 } else if size < 1000 {
@@ -117,12 +121,53 @@ impl SvgRender {
     /// Show the rendered svg
     pub fn show(&self, ui: &mut Ui) -> Result<egui::Response, ()> {
         if let Some(texture_save) = &self.texture_save {
-            let sized_texture = SizedTexture::from_handle(texture_save);
-            return Ok(ui.add(
-                Image::new(sized_texture)
-                    .fit_to_original_size(1.0 / self.scaler as f32)
-                    .sense(Sense::click()),
-            ));
+            let texture_size = texture_save.size();
+            let image_size = ImageSize {
+                maintain_aspect_ratio: true,
+                max_size: Vec2::INFINITY,
+                fit: ImageFit::Original {
+                    scale: 1.0 / self.scaler as f32,
+                },
+            };
+            let ui_size = image_size.calc_size(
+                ui.available_size(),
+                Vec2::new(texture_size[0] as f32, texture_size[1] as f32),
+            );
+            let (rect, response) = ui.allocate_exact_size(ui_size, Sense::click());
+            response.widget_info(|| {
+                let mut info = WidgetInfo::new(WidgetType::Image);
+                info.label = Some("rendered svg".to_string());
+                info
+            });
+            if ui.is_rect_visible(rect) {
+                let painter = ui.painter();
+                let uv = Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0));
+                painter.add(
+                    RectShape::filled(rect, CornerRadius::ZERO, Color32::WHITE)
+                        .with_texture(texture_save.id(), uv),
+                );
+
+                // rect
+                // let visuals = ui.style().interact_selectable(&response, true);
+                // let height_draw = ui_size.y.min(ui_size.x);
+                // let rect = Rect::from_center_size(
+                //     Pos2::new(100.0, 100.0),
+                //     Vec2 {
+                //         x: 0.01 * height_draw,
+                //         y: 0.01 * height_draw,
+                //     },
+                // );
+                // let rect = rect.expand(visuals.expansion);
+                // let radius = 0.05 * rect.height();
+                // ui.painter().rect(
+                //     rect,
+                //     radius,
+                //     visuals.bg_fill,
+                //     visuals.bg_stroke,
+                //     egui::StrokeKind::Inside,
+                // );
+            }
+            return Ok(response);
         }
         Err(())
     }

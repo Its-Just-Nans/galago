@@ -54,6 +54,8 @@ const BASE_SVG: &str = include_str!("../assets/galago.svg");
 impl Default for GalagoApp {
     fn default() -> Self {
         let mut usvg_options = usvg::Options::default();
+        // sadly, no wasm support
+        // https://github.com/RazrFalcon/fontdb/issues/83
         usvg_options.fontdb_mut().load_system_fonts();
         Self {
             svg: BASE_SVG.to_string(),

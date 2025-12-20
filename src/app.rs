@@ -3,6 +3,7 @@
 use bladvak::eframe::egui::{self};
 use bladvak::utils::grid::Grid;
 use bladvak::{AppError, BladvakApp, eframe};
+use resvg::usvg;
 use std::fmt::Debug;
 use std::path::PathBuf;
 
@@ -38,16 +39,22 @@ pub struct GalagoApp {
     pub(crate) should_reset_view: bool,
 
     /// Path to save the svg
-    pub save_path: Option<PathBuf>,
+    pub(crate) save_path: Option<PathBuf>,
 
     /// Svg is valid
-    pub svg_is_valid: bool,
+    pub(crate) svg_is_valid: bool,
+
+    /// usvg options
+    #[serde(skip)]
+    pub(crate) usvg_options: usvg::Options<'static>,
 }
 
 const BASE_SVG: &str = include_str!("../assets/galago.svg");
 
 impl Default for GalagoApp {
     fn default() -> Self {
+        let mut usvg_options = usvg::Options::default();
+        usvg_options.fontdb_mut().load_system_fonts();
         Self {
             svg: BASE_SVG.to_string(),
             saved_svg: BASE_SVG.to_string(),
@@ -59,6 +66,7 @@ impl Default for GalagoApp {
             should_reset_view: false,
             save_path: None,
             svg_is_valid: true,
+            usvg_options,
         }
     }
 }
@@ -83,7 +91,7 @@ impl GalagoApp {
     }
 }
 
-impl BladvakApp for GalagoApp {
+impl BladvakApp<'_> for GalagoApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Result<Self, AppError> {
         Ok(Self::new_app(cc))
     }
@@ -165,6 +173,10 @@ impl BladvakApp for GalagoApp {
         "https://github.com/Its-Just-Nans/galago".to_string()
     }
 
+    fn icon() -> &'static [u8] {
+        &include_bytes!("../assets/icon-256.png")[..]
+    }
+
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         self.app_central_panel(ui, error_manager)
     }
@@ -217,8 +229,7 @@ impl GalagoApp {
     /// Side panel
     fn app_side_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         if !self.string_viewer.is_windows {
-            self.string_viewer
-                .show(ui, &mut self.svg, self.svg_is_valid, error_manager);
+            self.show_svg_string(ui, error_manager);
         }
         if !self.tree_viewer.is_windows {
             if !self.string_viewer.is_windows {

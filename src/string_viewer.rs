@@ -6,6 +6,8 @@ use bladvak::eframe::egui::{self, Color32, Frame};
 use bladvak::{AppError, ErrorManager, egui_extras};
 use resvg::usvg::WriteOptions;
 
+use crate::GalagoApp;
+
 /// String Viewer
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct StringViewer {
@@ -55,21 +57,17 @@ impl StringViewer {
         self.theme.ui(ui);
         self.theme.clone().store_in_memory(ui.ctx());
     }
+}
 
+impl GalagoApp {
     /// Show the String Viewer
-    pub fn show(
-        &self,
-        ui: &mut egui::Ui,
-        svg: &mut String,
-        is_correct: bool,
-        error_manager: &mut ErrorManager,
-    ) {
+    pub fn show_svg_string(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         Frame::new().show(ui, |ui| {
             let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
                 let mut layout_job = egui_extras::syntax_highlighting::highlight(
                     ui.ctx(),
                     ui.style(),
-                    &self.theme,
+                    &self.string_viewer.theme,
                     buf.as_str(),
                     "svg",
                 );
@@ -80,14 +78,14 @@ impl StringViewer {
             egui::ScrollArea::vertical()
                 .max_height(height / 2.0 - 40.0)
                 .show(ui, |ui| {
-                    let multiliner = egui::TextEdit::multiline(svg)
-                        .font(egui::FontId::monospace(self.theme_font_size)) // for cursor height
+                    let multiliner = egui::TextEdit::multiline(&mut self.svg)
+                        .font(egui::FontId::monospace(self.string_viewer.theme_font_size)) // for cursor height
                         .code_editor()
                         .desired_rows(10)
                         .lock_focus(true)
                         .desired_width(f32::INFINITY);
 
-                    if is_correct {
+                    if self.svg_is_valid {
                         ui.add(multiliner.layouter(&mut layouter));
                     } else {
                         ui.add(multiliner.text_color(Color32::RED)).on_hover_text(
@@ -97,11 +95,11 @@ impl StringViewer {
                 });
             ui.horizontal(|ui| {
                 if ui.button("Copy svg").clicked() {
-                    ui.ctx().copy_text(svg.clone());
+                    ui.ctx().copy_text(self.svg.clone());
                 }
                 if ui.button("Simplify").clicked() {
-                    match resvg::usvg::Tree::from_str(svg, &resvg::usvg::Options::default()) {
-                        Ok(tree) => *svg = tree.to_string(&WriteOptions::default()),
+                    match resvg::usvg::Tree::from_str(&self.svg, &self.usvg_options) {
+                        Ok(tree) => self.svg = tree.to_string(&WriteOptions::default()),
                         Err(e) => {
                             error_manager.add_error(AppError::new_with_source(
                                 "Cannot simplify the svg",

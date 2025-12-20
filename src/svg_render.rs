@@ -11,6 +11,8 @@ use egui::{
 };
 use resvg::tiny_skia::Pixmap;
 
+use crate::GalagoApp;
+
 /// Svg Render Struct
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct SvgRender {
@@ -66,58 +68,6 @@ impl SvgRender {
         self.need_reload = self.scaler != current_value || self.auto_scale != current_auto_scale;
     }
 
-    /// Update the svg
-    pub fn update(&mut self, ctx: &Context, svg: &str) -> Result<(), Option<AppError>> {
-        if !self.need_reload && self.texture_save.is_some() && svg == self.cached_svg {
-            return Ok(());
-        }
-
-        if let Ok(rtree) = resvg::usvg::Tree::from_str(svg, &resvg::usvg::Options::default()) {
-            if self.auto_scale {
-                // Calculate the sizer based on the SVG size
-                let size = rtree.size().width().max(rtree.size().height()) as u32;
-                if size < 500 {
-                    self.scaler = 6;
-                } else if size < 1000 {
-                    self.scaler = 4;
-                } else if size < 2000 {
-                    self.scaler = 2;
-                } else {
-                    self.scaler = 1;
-                }
-            }
-            let (w, h) = (
-                rtree.size().width() as u32 * self.scaler,
-                rtree.size().height() as u32 * self.scaler,
-            );
-            let mut pixmap = Pixmap::new(w, h).ok_or_else(|| {
-                Some(AppError::new(format!(
-                    "Failed to create SVG Pixmap of size {w}x{h}"
-                )))
-            })?;
-
-            let transform = resvg::tiny_skia::Transform {
-                sx: self.scaler as f32,
-                sy: self.scaler as f32,
-                ..Default::default()
-            };
-            resvg::render(&rtree, transform, &mut pixmap.as_mut());
-
-            let image = egui::ColorImage::from_rgba_unmultiplied([w as _, h as _], pixmap.data());
-
-            let texture_loaded = ctx.load_texture(
-                "svg",
-                ImageData::Color(Arc::new(image)),
-                TextureOptions::default(),
-            );
-            self.texture_save = Some(texture_loaded);
-            self.cached_svg = svg.to_string();
-            self.need_reload = false;
-            return Ok(());
-        }
-        Err(None)
-    }
-
     /// Show the rendered svg
     pub fn show(&self, ui: &mut Ui) -> Result<egui::Response, ()> {
         if let Some(texture_save) = &self.texture_save {
@@ -170,5 +120,64 @@ impl SvgRender {
             return Ok(response);
         }
         Err(())
+    }
+}
+
+impl GalagoApp {
+    /// Update the svg
+    /// # Errors
+    /// Return error if fails to render svg
+    pub fn update_svg(&mut self, ctx: &Context) -> Result<(), Option<AppError>> {
+        if !self.svg_render.need_reload
+            && self.svg_render.texture_save.is_some()
+            && self.svg == self.svg_render.cached_svg
+        {
+            return Ok(());
+        }
+
+        if let Ok(rtree) = resvg::usvg::Tree::from_str(&self.svg, &self.usvg_options) {
+            if self.svg_render.auto_scale {
+                // Calculate the sizer based on the SVG size
+                let size = rtree.size().width().max(rtree.size().height()) as u32;
+                if size < 500 {
+                    self.svg_render.scaler = 6;
+                } else if size < 1000 {
+                    self.svg_render.scaler = 4;
+                } else if size < 2000 {
+                    self.svg_render.scaler = 2;
+                } else {
+                    self.svg_render.scaler = 1;
+                }
+            }
+            let (w, h) = (
+                rtree.size().width() as u32 * self.svg_render.scaler,
+                rtree.size().height() as u32 * self.svg_render.scaler,
+            );
+            let mut pixmap = Pixmap::new(w, h).ok_or_else(|| {
+                Some(AppError::new(format!(
+                    "Failed to create SVG Pixmap of size {w}x{h}"
+                )))
+            })?;
+
+            let transform = resvg::tiny_skia::Transform {
+                sx: self.svg_render.scaler as f32,
+                sy: self.svg_render.scaler as f32,
+                ..Default::default()
+            };
+            resvg::render(&rtree, transform, &mut pixmap.as_mut());
+
+            let image = egui::ColorImage::from_rgba_unmultiplied([w as _, h as _], pixmap.data());
+
+            let texture_loaded = ctx.load_texture(
+                "svg",
+                ImageData::Color(Arc::new(image)),
+                TextureOptions::default(),
+            );
+            self.svg_render.texture_save = Some(texture_loaded);
+            self.svg_render.cached_svg = self.svg.to_string();
+            self.svg_render.need_reload = false;
+            return Ok(());
+        }
+        Err(None)
     }
 }

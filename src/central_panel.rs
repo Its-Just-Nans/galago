@@ -13,7 +13,7 @@ impl GalagoApp {
         ui: &mut egui::Ui,
         error_manager: &mut bladvak::ErrorManager,
     ) {
-        self.svg_is_valid = match self.svg_render.update(ui.ctx(), &self.svg) {
+        self.svg_is_valid = match self.update_svg(ui.ctx()) {
             Ok(_) => true,
             Err(e) => {
                 if let Some(err) = e {
@@ -61,8 +61,7 @@ impl GalagoApp {
                 .open(&mut current_open)
                 .resizable(true)
                 .show(ctx, |ui| {
-                    self.string_viewer
-                        .show(ui, &mut self.svg, self.svg_is_valid, error_manager);
+                    self.show_svg_string(ui, error_manager);
                 });
             self.string_viewer.is_windows = current_open;
         }

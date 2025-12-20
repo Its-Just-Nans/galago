@@ -2,7 +2,7 @@
 
 use bladvak::eframe::egui::{self};
 use bladvak::utils::grid::Grid;
-use bladvak::{AppError, BladvakApp, eframe};
+use bladvak::{AppError, BladvakApp, File, eframe};
 use resvg::usvg;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -128,7 +128,7 @@ impl BladvakApp<'_> for GalagoApp {
                 self.svg_render = SvgRender::new();
             }
         });
-        self.svg_render.show_settings(ui);
+        self.show_render_settings(ui);
 
         ui.separator();
         ui.horizontal(|ui| {
@@ -184,14 +184,32 @@ impl BladvakApp<'_> for GalagoApp {
         self.app_central_panel(ui, error_manager)
     }
 
-    fn handle_file(&mut self, bytes: &[u8]) -> Result<(), AppError> {
-        match String::from_utf8(bytes.to_vec()) {
-            Ok(svg_str) => {
-                self.saved_svg = svg_str.clone();
-                self.svg = svg_str;
-                Ok(())
+    fn handle_file(&mut self, file: File) -> Result<(), AppError> {
+        let most_likely_font = file
+            .path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| {
+                matches!(
+                    e.to_ascii_lowercase().as_str(),
+                    "ttf" | "otf" | "woff" | "woff2" | "eot" | "ttc"
+                )
+            })
+            .unwrap_or(false);
+        if most_likely_font {
+            self.usvg_options
+                .fontdb_mut()
+                .load_font_data(file.data.to_vec());
+            Ok(())
+        } else {
+            match String::from_utf8(file.data.to_vec()) {
+                Ok(svg_str) => {
+                    self.saved_svg = svg_str.clone();
+                    self.svg = svg_str;
+                    Ok(())
+                }
+                Err(e) => Err(e.into()),
             }
-            Err(e) => Err(e.into()),
         }
     }
     /// Check if the sidebar is needed

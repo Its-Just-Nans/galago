@@ -4,6 +4,7 @@ use std::sync::Arc;
 use bladvak::{
     AppError,
     eframe::{egui, epaint::RectShape},
+    log,
 };
 use egui::{
     Color32, Context, CornerRadius, ImageData, ImageFit, ImageSize, Rect, Sense, TextureHandle,
@@ -54,18 +55,6 @@ impl SvgRender {
     /// Title of the SVG Render
     pub fn title(&self) -> &'static str {
         "SVG Render"
-    }
-
-    /// Settings
-    pub fn show_settings(&mut self, ui: &mut Ui) {
-        let current_auto_scale = self.auto_scale;
-        ui.checkbox(&mut self.auto_scale, "Auto Scale SVG");
-        let current_value = self.scaler;
-        ui.add_enabled(
-            !self.auto_scale,
-            egui::Slider::new(&mut self.scaler, 1..=10).text("SVG Scaler"),
-        );
-        self.need_reload = self.scaler != current_value || self.auto_scale != current_auto_scale;
     }
 
     /// Show the rendered svg
@@ -124,6 +113,41 @@ impl SvgRender {
 }
 
 impl GalagoApp {
+    /// Render settings
+    pub fn show_render_settings(&mut self, ui: &mut Ui) {
+        if ui
+            .checkbox(&mut self.svg_render.auto_scale, "Auto Scale SVG")
+            .changed()
+        {
+            self.svg_render.need_reload = true;
+        }
+        if ui
+            .add_enabled(
+                !self.svg_render.auto_scale,
+                egui::Slider::new(&mut self.svg_render.scaler, 1..=10).text("SVG Scaler"),
+            )
+            .changed()
+        {
+            self.svg_render.need_reload = true;
+        }
+        ui.collapsing("Loaded fonts", |ui| {
+            egui::ScrollArea::vertical()
+                .max_height(40.0)
+                .show(ui, |ui| {
+                    for font in self.usvg_options.fontdb.faces() {
+                        for font_family in &font.families {
+                            ui.label(format!(
+                                "{} ({}-{})",
+                                font_family.0,
+                                font.weight.0,
+                                font.stretch.to_number()
+                            ));
+                        }
+                    }
+                });
+        });
+    }
+
     /// Update the svg
     /// # Errors
     /// Return error if fails to render svg
@@ -134,6 +158,7 @@ impl GalagoApp {
         {
             return Ok(());
         }
+        log::debug!("Rendering SVG");
 
         if let Ok(rtree) = resvg::usvg::Tree::from_str(&self.svg, &self.usvg_options) {
             if self.svg_render.auto_scale {

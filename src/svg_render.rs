@@ -136,6 +136,7 @@ impl GalagoApp {
             egui::ScrollArea::vertical()
                 .max_height(40.0)
                 .show(ui, |ui| {
+                    ui.set_min_width(ui.available_width());
                     for font in self.usvg_options.fontdb.faces() {
                         for font_family in &font.families {
                             ui.label(format!(

@@ -22,26 +22,23 @@ pub struct SvgRender {
     texture_save: Option<TextureHandle>,
 
     /// Cached svg string
-    cached_svg: String,
+    #[serde(skip)]
+    cached_svg: Option<String>,
 
     /// Whether to auto scale the SVG
     auto_scale: bool,
 
     /// Sizer for scaling the SVG
     scaler: u32,
-
-    /// Whether to reload the SVG
-    need_reload: bool,
 }
 
 impl Default for SvgRender {
     fn default() -> Self {
         Self {
             texture_save: None,
-            cached_svg: String::new(),
+            cached_svg: None,
             auto_scale: true,
             scaler: 1,
-            need_reload: false,
         }
     }
 }
@@ -55,6 +52,11 @@ impl SvgRender {
     /// Title of the SVG Render
     pub fn title(&self) -> &'static str {
         "SVG Render"
+    }
+
+    /// Mark the render as stale - need to re-render
+    pub fn stale_render(&mut self) {
+        self.cached_svg = None;
     }
 
     /// Show the rendered svg
@@ -119,7 +121,7 @@ impl GalagoApp {
             .checkbox(&mut self.svg_render.auto_scale, "Auto Scale SVG")
             .changed()
         {
-            self.svg_render.need_reload = true;
+            self.svg_render.stale_render();
         }
         if ui
             .add_enabled(
@@ -128,7 +130,7 @@ impl GalagoApp {
             )
             .changed()
         {
-            self.svg_render.need_reload = true;
+            self.svg_render.stale_render();
         }
         ui.collapsing("Loaded fonts", |ui| {
             egui::ScrollArea::vertical()
@@ -152,9 +154,12 @@ impl GalagoApp {
     /// # Errors
     /// Return error if fails to render svg
     pub fn update_svg(&mut self, ctx: &Context) -> Result<(), Option<AppError>> {
-        if !self.svg_render.need_reload
-            && self.svg_render.texture_save.is_some()
-            && self.svg == self.svg_render.cached_svg
+        if self.svg_render.texture_save.is_some()
+            && self
+                .svg_render
+                .cached_svg
+                .as_deref()
+                .is_some_and(|cached| self.svg == cached)
         {
             return Ok(());
         }
@@ -199,8 +204,7 @@ impl GalagoApp {
                 TextureOptions::default(),
             );
             self.svg_render.texture_save = Some(texture_loaded);
-            self.svg_render.cached_svg = self.svg.to_string();
-            self.svg_render.need_reload = false;
+            self.svg_render.cached_svg = Some(self.svg.to_string());
             return Ok(());
         }
         Err(None)

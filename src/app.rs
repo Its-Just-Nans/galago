@@ -200,6 +200,7 @@ impl BladvakApp<'_> for GalagoApp {
             self.usvg_options
                 .fontdb_mut()
                 .load_font_data(file.data.to_vec());
+            self.svg_render.stale_render();
             Ok(())
         } else {
             match String::from_utf8(file.data.to_vec()) {

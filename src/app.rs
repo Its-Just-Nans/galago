@@ -197,13 +197,11 @@ impl BladvakApp<'_> for GalagoApp {
             })
             .unwrap_or(false);
         if most_likely_font {
-            self.usvg_options
-                .fontdb_mut()
-                .load_font_data(file.data.to_vec());
+            self.usvg_options.fontdb_mut().load_font_data(file.data);
             self.svg_render.stale_render();
             Ok(())
         } else {
-            match String::from_utf8(file.data.to_vec()) {
+            match String::from_utf8(file.data) {
                 Ok(svg_str) => {
                     self.saved_svg = svg_str.clone();
                     self.svg = svg_str;

@@ -21,7 +21,7 @@ impl GalagoApp {
 
     /// Save the current svg
     pub(crate) fn save_svg(&mut self, path_file: &PathBuf) -> Result<(), String> {
-        let bytes = self.svg.as_bytes().to_vec();
-        bladvak::utils::save_file(&bytes, path_file)
+        let bytes = self.svg.as_bytes();
+        bladvak::utils::save_file(bytes, path_file)
     }
 }

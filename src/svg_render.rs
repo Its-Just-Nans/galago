@@ -2,7 +2,8 @@
 use std::sync::Arc;
 
 use bladvak::{
-    AppError,
+    AppError, ErrorManager,
+    app::BladvakPanel,
     eframe::{egui, epaint::RectShape},
     log,
 };
@@ -44,16 +45,6 @@ impl Default for SvgRender {
 }
 
 impl SvgRender {
-    /// Create a new SvgRender
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    /// Title of the SVG Render
-    pub fn title(&self) -> &'static str {
-        "SVG Render"
-    }
-
     /// Mark the render as stale - need to re-render
     pub fn stale_render(&mut self) {
         self.cached_svg = None;
@@ -210,4 +201,44 @@ impl GalagoApp {
         }
         Err(None)
     }
+}
+
+/// Svg viewer and grid setting
+#[derive(Debug)]
+pub struct SvgViewerPanel;
+
+impl BladvakPanel for SvgViewerPanel {
+    type App = GalagoApp;
+
+    fn name(&self) -> &str {
+        "SVG viewer"
+    }
+
+    fn has_settings(&self) -> bool {
+        true
+    }
+
+    fn ui_settings(
+        &self,
+        app: &mut Self::App,
+        ui: &mut egui::Ui,
+        _error_manager: &mut ErrorManager,
+    ) {
+        app.show_render_settings(ui);
+        ui.separator();
+        ui.heading("Grid settings");
+        app.grid.show_settings(ui);
+
+        ui.separator();
+        if ui.button("Default svg").clicked() {
+            app.saved_svg = GalagoApp::BASE_SVG.to_string();
+            app.svg = GalagoApp::BASE_SVG.to_string();
+        }
+    }
+
+    fn has_ui(&self) -> bool {
+        false
+    }
+
+    fn ui(&self, _app: &mut Self::App, _ui: &mut egui::Ui, _error_manager: &mut ErrorManager) {}
 }

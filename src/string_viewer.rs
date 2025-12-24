@@ -1,19 +1,16 @@
 //! String Viewer
 
-use std::sync::Arc;
-
+use bladvak::app::BladvakPanel;
 use bladvak::eframe::egui::{self, Color32, Frame};
 use bladvak::{AppError, ErrorManager, egui_extras};
 use resvg::usvg::WriteOptions;
+use std::sync::Arc;
 
 use crate::GalagoApp;
 
 /// String Viewer
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct StringViewer {
-    /// is windows mode
-    pub is_windows: bool,
-
     /// Theme
     pub theme: egui_extras::syntax_highlighting::CodeTheme,
 
@@ -26,36 +23,53 @@ const DEFAULT_FONT_SIZE: f32 = 12.0;
 impl Default for StringViewer {
     fn default() -> Self {
         Self {
-            is_windows: false,
             theme: egui_extras::syntax_highlighting::CodeTheme::dark(DEFAULT_FONT_SIZE),
             theme_font_size: DEFAULT_FONT_SIZE,
         }
     }
 }
 
-impl StringViewer {
-    /// Create new StringViewer
-    pub fn new() -> Self {
-        Default::default()
-    }
+/// String viewer panel
+#[derive(Debug)]
+pub struct StringViewerPanel;
 
-    /// Title of String Viewer
-    pub fn title(&self) -> &'static str {
+impl BladvakPanel for StringViewerPanel {
+    type App = GalagoApp;
+
+    fn name(&self) -> &str {
         "SVG String"
     }
 
-    /// Show settings for String Viewer
-    pub fn show_settings(&mut self, ui: &mut egui::Ui) {
-        ui.checkbox(&mut self.is_windows, "String as windows");
+    fn has_settings(&self) -> bool {
+        true
+    }
+
+    fn ui_settings(
+        &self,
+        app: &mut Self::App,
+        ui: &mut egui::Ui,
+        _error_manager: &mut ErrorManager,
+    ) {
         if ui
-            .add(egui::Slider::new(&mut self.theme_font_size, 8.0..=32.0).text("Font Size"))
+            .add(
+                egui::Slider::new(&mut app.string_viewer.theme_font_size, 8.0..=32.0)
+                    .text("Font Size"),
+            )
             .on_hover_text("Font size for the code editor")
             .changed()
         {
             // TODO wait for https://github.com/emilk/egui/pull/7684
         }
-        self.theme.ui(ui);
-        self.theme.clone().store_in_memory(ui.ctx());
+        app.string_viewer.theme.ui(ui);
+        app.string_viewer.theme.clone().store_in_memory(ui.ctx());
+    }
+
+    fn has_ui(&self) -> bool {
+        true
+    }
+
+    fn ui(&self, app: &mut Self::App, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        app.show_svg_string(ui, error_manager);
     }
 }
 

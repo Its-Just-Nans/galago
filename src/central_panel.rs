@@ -1,6 +1,6 @@
 //! Central panel
 use bladvak::{
-    eframe::egui::{self, Pos2, Rect, Window},
+    eframe::egui::{self, Pos2, Rect},
     log,
 };
 
@@ -11,7 +11,7 @@ impl GalagoApp {
     pub(crate) fn app_central_panel(
         &mut self,
         ui: &mut egui::Ui,
-        error_manager: &mut bladvak::ErrorManager,
+        _error_manager: &mut bladvak::ErrorManager,
     ) {
         self.svg_is_valid = match self.update_svg(ui.ctx()) {
             Ok(_) => true,
@@ -22,7 +22,6 @@ impl GalagoApp {
                 false
             }
         };
-        self.central_panel_windows(ui, error_manager);
         let rect = ui.available_rect_before_wrap();
         let response = egui::Scene::new()
             .max_inner_size([350.0, 1000.0])
@@ -43,40 +42,6 @@ impl GalagoApp {
         if self.should_reset_view || response.double_clicked() {
             let real_rect = Rect::from_two_pos(Pos2::ZERO, (rect.max - rect.min).to_pos2());
             self.scene_rect = real_rect;
-        }
-    }
-
-    /// Other central panel
-    fn central_panel_windows(
-        &mut self,
-        ui: &mut egui::Ui,
-        error_manager: &mut bladvak::ErrorManager,
-    ) {
-        let ctx = ui.ctx();
-        if self.string_viewer.is_windows {
-            let mut current_open = true;
-            Window::new(self.string_viewer.title())
-                .min_width(500.0)
-                .min_height(100.0)
-                .open(&mut current_open)
-                .resizable(true)
-                .show(ctx, |ui| {
-                    self.show_svg_string(ui, error_manager);
-                });
-            self.string_viewer.is_windows = current_open;
-        }
-        if self.tree_viewer.is_windows {
-            let mut current_open = true;
-
-            Window::new(self.tree_viewer.title())
-                .resizable(true)
-                .min_width(500.0)
-                .min_height(100.0)
-                .open(&mut current_open)
-                .show(ctx, |ui| {
-                    self.tree_viewer.show(ui, &mut self.svg, error_manager);
-                });
-            self.tree_viewer.is_windows = current_open;
         }
     }
 }

@@ -1,13 +1,14 @@
 //! Tree Viewer
 
-use std::collections::HashMap;
-
 use bladvak::ErrorManager;
+use bladvak::app::BladvakPanel;
 use bladvak::eframe::egui::{self, Color32, DragValue, Frame, Ui, Window};
 use bladvak::egui_extras::{Column, TableBuilder};
+use std::collections::HashMap;
 use svgtypes::PathSegment;
 use xmltree::{Element, EmitterConfig};
 
+use crate::GalagoApp;
 use crate::path::{
     SvgPath, circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
     rect_to_path,
@@ -16,9 +17,6 @@ use crate::path::{
 /// TreeViewer Struct
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct TreeViewer {
-    /// is windows mode
-    pub is_windows: bool,
-
     /// Is multi line
     is_multi_line: bool,
 
@@ -59,7 +57,6 @@ pub struct TreeViewer {
 impl Default for TreeViewer {
     fn default() -> Self {
         Self {
-            is_windows: false,
             is_multi_line: true,
             is_editable: false,
             edit_path_as_input: false,
@@ -79,23 +76,6 @@ impl Default for TreeViewer {
 }
 
 impl TreeViewer {
-    /// Create a new Tree Viewer
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    /// Tree Viewer title
-    pub fn title(&self) -> &'static str {
-        "SVG Tree"
-    }
-
-    /// Settings
-    pub fn show_settings(&mut self, ui: &mut Ui) {
-        ui.checkbox(&mut self.is_windows, "Tree as windows");
-        ui.checkbox(&mut self.is_multi_line, "Multi line attributes");
-        ui.checkbox(&mut self.edit_path_as_input, "Edit path as inputs");
-    }
-
     /// Show Tree Viewer
     pub fn show(&mut self, ui: &mut Ui, svg_str: &mut String, error_manager: &mut ErrorManager) {
         Frame::new()
@@ -588,5 +568,42 @@ impl TreeViewer {
         if !is_open {
             self.ref_group = None; // Reset the reference group when the edition window is closed
         }
+    }
+}
+
+/// Tree viewer panel
+#[derive(Debug)]
+pub struct TreeViewerPanel;
+
+impl BladvakPanel for TreeViewerPanel {
+    type App = GalagoApp;
+
+    fn name(&self) -> &str {
+        "SVG tree"
+    }
+
+    fn has_settings(&self) -> bool {
+        true
+    }
+
+    fn ui_settings(
+        &self,
+        app: &mut Self::App,
+        ui: &mut egui::Ui,
+        _error_manager: &mut ErrorManager,
+    ) {
+        ui.checkbox(&mut app.tree_viewer.is_multi_line, "Multi line attributes");
+        ui.checkbox(
+            &mut app.tree_viewer.edit_path_as_input,
+            "Edit path as inputs",
+        );
+    }
+
+    fn has_ui(&self) -> bool {
+        true
+    }
+
+    fn ui(&self, app: &mut Self::App, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
+        app.tree_viewer.show(ui, &mut app.svg, error_manager);
     }
 }

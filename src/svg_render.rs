@@ -6,6 +6,7 @@ use bladvak::{
     app::BladvakPanel,
     eframe::{egui, epaint::RectShape},
     log,
+    utils::grid::Grid,
 };
 use egui::{
     Color32, Context, CornerRadius, ImageData, ImageFit, ImageSize, Rect, Sense, TextureHandle,
@@ -229,7 +230,12 @@ impl BladvakPanel for SvgViewerPanel {
     ) {
         app.show_render_settings(ui);
         ui.separator();
-        ui.heading("Grid settings");
+        ui.horizontal(|ui| {
+            ui.label(format!("{} settings", app.grid.title()));
+            ui.button("⟳").clicked().then(|| {
+                app.grid = Grid::default();
+            });
+        });
         app.grid.show_settings(ui);
 
         ui.separator();

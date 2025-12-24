@@ -123,23 +123,26 @@ impl GalagoApp {
         {
             self.svg_render.stale_render();
         }
-        ui.collapsing("Loaded fonts", |ui| {
-            egui::ScrollArea::vertical()
-                .max_height(40.0)
-                .show(ui, |ui| {
-                    ui.set_min_width(ui.available_width());
-                    for font in self.usvg_options.fontdb.faces() {
-                        for font_family in &font.families {
-                            ui.label(format!(
-                                "{} ({}-{})",
-                                font_family.0,
-                                font.weight.0,
-                                font.stretch.to_number()
-                            ));
+        ui.collapsing(
+            format!("Loaded fonts ({})", self.usvg_options.fontdb.len()),
+            |ui| {
+                egui::ScrollArea::vertical()
+                    .max_height(40.0)
+                    .show(ui, |ui| {
+                        ui.set_min_width(ui.available_width());
+                        for font in self.usvg_options.fontdb.faces() {
+                            for font_family in &font.families {
+                                ui.label(format!(
+                                    "{} ({}-{})",
+                                    font_family.0,
+                                    font.weight.0,
+                                    font.stretch.to_number()
+                                ));
+                            }
                         }
-                    }
-                });
-        });
+                    });
+            },
+        );
     }
 
     /// Update the svg

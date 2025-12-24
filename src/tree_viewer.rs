@@ -90,10 +90,10 @@ impl TreeViewer {
                     .id_salt("tree_viewer")
                     .show(ui, |ui| {
                         ui.set_min_width(ui.available_width());
-                        ui.checkbox(&mut self.is_editable, "Editable (auto-write)");
                         match &mut Element::parse(svg_str.as_bytes()) {
                             Ok(e) => {
                                 // edit width and height and viewbox
+                                ui.checkbox(&mut self.is_editable, "Editable (auto-write)");
                                 ui.collapsing("SVG", |ui| {
                                     for (key, value) in e.attributes.iter_mut() {
                                         ui.horizontal(|ui| {

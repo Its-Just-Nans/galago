@@ -53,6 +53,7 @@ impl SvgRender {
 
     /// Show the rendered svg
     #[allow(clippy::cast_precision_loss)]
+    pub fn show(&self, ui: &mut Ui) -> Result<egui::Response, ()> {
         if let Some(texture_save) = &self.texture_save {
             let texture_size = texture_save.size();
             let image_size = ImageSize {

@@ -13,7 +13,7 @@ use crate::svg_render::SvgViewerPanel;
 use crate::tree_viewer::TreeViewerPanel;
 use crate::{string_viewer::StringViewer, svg_render::SvgRender, tree_viewer::TreeViewer};
 
-/// GalagoApp struct
+/// `GalagoApp` struct
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GalagoApp {
@@ -27,16 +27,16 @@ pub struct GalagoApp {
     #[serde(skip)]
     pub(crate) scene_rect: egui::Rect,
 
-    /// TreeViewer Ui
+    /// `TreeViewer` Ui
     pub(crate) tree_viewer: TreeViewer,
 
-    /// StringViewer Ui
+    /// `StringViewer` Ui
     pub(crate) string_viewer: StringViewer,
 
     /// Grid options
     pub(crate) grid: Grid,
 
-    /// SvgRender
+    /// `SvgRender`
     pub(crate) svg_render: SvgRender,
 
     /// should reset the view
@@ -108,7 +108,7 @@ impl BladvakApp<'_> for GalagoApp {
             match fs::read_to_string(path) {
                 Ok(svg) => {
                     let mut app = saved_state;
-                    app.saved_svg = svg.clone();
+                    app.saved_svg.clone_from(&svg);
                     app.svg = svg;
                     Ok(app)
                 }
@@ -123,7 +123,7 @@ impl BladvakApp<'_> for GalagoApp {
     }
 
     fn top_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
-        self.app_top_panel(ui, error_manager)
+        self.app_top_panel(ui, error_manager);
     }
 
     fn name() -> String {
@@ -143,7 +143,7 @@ impl BladvakApp<'_> for GalagoApp {
     }
 
     fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
-        self.app_central_panel(ui, error_manager)
+        self.app_central_panel(ui, error_manager);
     }
 
     fn handle_file(&mut self, file: File) -> Result<(), AppError> {
@@ -151,13 +151,12 @@ impl BladvakApp<'_> for GalagoApp {
             .path
             .extension()
             .and_then(|e| e.to_str())
-            .map(|e| {
+            .is_some_and(|e| {
                 matches!(
                     e.to_ascii_lowercase().as_str(),
                     "ttf" | "otf" | "woff" | "woff2" | "eot" | "ttc"
                 )
-            })
-            .unwrap_or(false);
+            });
         if most_likely_font {
             self.usvg_options.fontdb_mut().load_font_data(file.data);
             self.svg_render.stale_render();
@@ -192,7 +191,7 @@ impl BladvakApp<'_> for GalagoApp {
             let save_path = bladvak::utils::get_save_path(Some(PathBuf::from("file.svg")));
             match save_path {
                 Ok(save_p) => {
-                    self.save_path = save_p.clone();
+                    self.save_path.clone_from(&save_p);
                     if let Some(path_to_save) = save_p
                         && let Err(err) = self.save_svg(&path_to_save)
                     {

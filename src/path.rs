@@ -1,7 +1,8 @@
 //! Path
-//! Good reading https://razrfalcon.github.io/notes-on-svg-parsing/path-data.html
+//! Good reading <https://razrfalcon.github.io/notes-on-svg-parsing/path-data.html>
 
 use std::fmt;
+use std::fmt::Write;
 use svgtypes::{PathParser, PathSegment};
 
 /// Represents a single SVG path segment.
@@ -12,12 +13,14 @@ pub struct SvgItem {
 }
 
 fn round_to(value: f64, decimals: u64) -> f64 {
-    let factor = 10f64.powi(decimals as i32);
+    let decimals = i32::try_from(decimals).unwrap_or(1);
+    let factor = 10f64.powi(decimals);
     (value * factor).round() / factor
 }
 
 impl SvgItem {
     /// Returns the letter
+    #[must_use]
     pub fn get_letter(&self) -> char {
         self.inner.command() as char
     }
@@ -33,10 +36,8 @@ impl SvgItem {
 impl fmt::Display for SvgItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let fmt = match self.inner {
-            PathSegment::MoveTo { abs: _, x, y } => {
-                format!("{}{} {}", self.get_letter(), x, y)
-            }
-            PathSegment::LineTo { abs: _, x, y } => {
+            PathSegment::MoveTo { abs: _, x, y } | PathSegment::LineTo { abs: _, x, y } => {
+                // move to
                 format!("{}{} {}", self.get_letter(), x, y)
             }
             PathSegment::HorizontalLineTo { abs: _, x } => {
@@ -82,6 +83,7 @@ impl fmt::Display for SvgItem {
                 format!("{}{} {} {} {}", self.get_letter(), x1, y1, x, y)
             }
             PathSegment::SmoothQuadratic { abs: _, x, y } => {
+                // smooth quadratic
                 format!("{}{} {}", self.get_letter(), x, y)
             }
             PathSegment::EllipticalArc {
@@ -143,6 +145,7 @@ impl SvgPath {
     }
 
     /// Converts the path to absolute coordinates.
+    #[allow(clippy::too_many_lines)]
     pub fn absolute(&mut self) {
         let mut pos = (0.0, 0.0);
         let mut subpath_start = (0.0, 0.0);
@@ -226,6 +229,7 @@ impl SvgPath {
                     pos.1 = *y;
                 }
                 PathSegment::SmoothQuadratic { abs, x, y } => {
+                    // quadratic
                     if !*abs {
                         *x += pos.0;
                         *y += pos.1;
@@ -244,6 +248,7 @@ impl SvgPath {
                     x,
                     y,
                 } => {
+                    // Ellipse
                     if !*abs {
                         *x += pos.0;
                         *y += pos.1;
@@ -261,6 +266,7 @@ impl SvgPath {
     }
 
     /// Converts the path to relative coordinates.
+    #[allow(clippy::too_many_lines)]
     pub fn relative(&mut self) {
         let mut pos = (0.0, 0.0);
         let mut subpath_start = (0.0, 0.0);
@@ -348,6 +354,7 @@ impl SvgPath {
                     pos.1 += *y;
                 }
                 PathSegment::SmoothQuadratic { abs, x, y } => {
+                    // smooth quadratic
                     if *abs {
                         *x -= pos.0;
                         *y -= pos.1;
@@ -388,7 +395,8 @@ impl SvgPath {
             match &mut item.inner {
                 PathSegment::MoveTo { x, y, .. }
                 | PathSegment::LineTo { x, y, .. }
-                | PathSegment::SmoothQuadratic { x, y, .. } => {
+                | PathSegment::SmoothQuadratic { x, y, .. }
+                | PathSegment::EllipticalArc { x, y, .. } => {
                     *x += dx;
                     *y += dy;
                 }
@@ -426,10 +434,7 @@ impl SvgPath {
                     *x += dx;
                     *y += dy;
                 }
-                PathSegment::EllipticalArc { x, y, .. } => {
-                    *x += dx;
-                    *y += dy;
-                }
+
                 PathSegment::ClosePath { .. } => {} // No coordinates to modify
             }
         }
@@ -490,7 +495,7 @@ impl SvgPath {
         }
     }
 
-    /// Rotates the path around (cx, cy) by angle_deg degrees.
+    /// Rotates the path around (cx, cy) by `angle_deg` degrees.
     pub fn rotate(&mut self, angle_deg: f64, cx: f64, cy: f64) {
         let angle_rad = angle_deg.to_radians();
         let (sin, cos) = angle_rad.sin_cos();
@@ -544,7 +549,10 @@ impl SvgPath {
                     rotate_point(x, y);
                     *x_axis_rotation += angle_deg;
                 }
-                PathSegment::ClosePath { .. } => {}
+                #[allow(clippy::match_same_arms)]
+                PathSegment::ClosePath { .. } => {
+                    // close path
+                }
             }
         }
     }
@@ -613,6 +621,7 @@ impl SvgPath {
     }
 
     /// Toggles the coordinate type (absolute/relative) of the path segment at the given index.
+    #[allow(clippy::too_many_lines)]
     pub fn toggle_coord_type_at(&mut self, index: usize) {
         let mut pos = (0.0, 0.0);
         let mut subpath_start = (0.0, 0.0);
@@ -635,6 +644,7 @@ impl SvgPath {
                         // subpath_start = pos;
                     }
                     PathSegment::LineTo { abs, x, y } => {
+                        // line to
                         if *abs {
                             *x -= pos.0;
                             *y -= pos.1;
@@ -725,6 +735,7 @@ impl SvgPath {
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
                     PathSegment::SmoothQuadratic { abs, x, y } => {
+                        // smooth quadratic
                         if *abs {
                             *x -= pos.0;
                             *y -= pos.1;
@@ -754,60 +765,59 @@ impl SvgPath {
                     }
                 }
                 break;
-            } else {
-                // Update the position so we know the current point at index i
-                match &item.inner {
-                    PathSegment::MoveTo { abs, x, y } => {
-                        if *abs {
-                            pos = (*x, *y);
-                        } else {
-                            pos.0 += *x;
-                            pos.1 += *y;
-                        }
-                        subpath_start = pos;
+            }
+            // Update the position so we know the current point at index i
+            match &item.inner {
+                PathSegment::MoveTo { abs, x, y } => {
+                    if *abs {
+                        pos = (*x, *y);
+                    } else {
+                        pos.0 += *x;
+                        pos.1 += *y;
                     }
-                    PathSegment::LineTo { abs, x, y }
-                    | PathSegment::SmoothQuadratic { abs, x, y }
-                    | PathSegment::Quadratic {
-                        abs,
-                        x1: _,
-                        y1: _,
-                        x,
-                        y,
+                    subpath_start = pos;
+                }
+                PathSegment::LineTo { abs, x, y }
+                | PathSegment::SmoothQuadratic { abs, x, y }
+                | PathSegment::Quadratic {
+                    abs,
+                    x1: _,
+                    y1: _,
+                    x,
+                    y,
+                }
+                | PathSegment::SmoothCurveTo {
+                    abs,
+                    x2: _,
+                    y2: _,
+                    x,
+                    y,
+                }
+                | PathSegment::CurveTo {
+                    abs,
+                    x1: _,
+                    y1: _,
+                    x2: _,
+                    y2: _,
+                    x,
+                    y,
+                }
+                | PathSegment::EllipticalArc { abs, x, y, .. } => {
+                    if *abs {
+                        pos = (*x, *y);
+                    } else {
+                        pos.0 += *x;
+                        pos.1 += *y;
                     }
-                    | PathSegment::SmoothCurveTo {
-                        abs,
-                        x2: _,
-                        y2: _,
-                        x,
-                        y,
-                    }
-                    | PathSegment::CurveTo {
-                        abs,
-                        x1: _,
-                        y1: _,
-                        x2: _,
-                        y2: _,
-                        x,
-                        y,
-                    }
-                    | PathSegment::EllipticalArc { abs, x, y, .. } => {
-                        if *abs {
-                            pos = (*x, *y);
-                        } else {
-                            pos.0 += *x;
-                            pos.1 += *y;
-                        }
-                    }
-                    PathSegment::HorizontalLineTo { abs, x } => {
-                        pos.0 = if *abs { *x } else { pos.0 + *x };
-                    }
-                    PathSegment::VerticalLineTo { abs, y } => {
-                        pos.1 = if *abs { *y } else { pos.1 + *y };
-                    }
-                    PathSegment::ClosePath { .. } => {
-                        pos = subpath_start;
-                    }
+                }
+                PathSegment::HorizontalLineTo { abs, x } => {
+                    pos.0 = if *abs { *x } else { pos.0 + *x };
+                }
+                PathSegment::VerticalLineTo { abs, y } => {
+                    pos.1 = if *abs { *y } else { pos.1 + *y };
+                }
+                PathSegment::ClosePath { .. } => {
+                    pos = subpath_start;
                 }
             }
         }
@@ -855,7 +865,9 @@ impl fmt::Display for SvgPath {
 }
 
 /// Convert a polyline string to an SVG path data string
-pub fn polyline_to_path(points: &str) -> String {
+/// # Errors
+/// Fails if fails to write to `path_data`
+pub fn polyline_to_path(points: &str) -> Result<String, std::fmt::Error> {
     let mut path_data = String::new();
     let mut first = true;
     let all_points = points.split_whitespace().collect::<Vec<&str>>();
@@ -863,22 +875,25 @@ pub fn polyline_to_path(points: &str) -> String {
         let coords1 = all_points[idx];
         let coords2 = all_points[idx + 1];
         if first {
-            path_data.push_str(&format!("M {coords1} {coords2}"));
+            write!(path_data, "M {coords1} {coords2}")?;
             first = false;
         } else {
-            path_data.push_str(&format!(" L {coords1} {coords2}"));
+            write!(path_data, " L {coords1} {coords2}")?;
         }
     }
-    path_data
+    Ok(path_data)
 }
 
 /// Convert a line string to an SVG path data string
+#[must_use]
 pub fn line_to_path(x1: &str, y1: &str, x2: &str, y2: &str) -> String {
     format!("M {x1} {y1} L {x2} {y2}")
 }
 
 /// Convert a polygon string to an SVG path data string
-pub fn polygon_to_path(points: &str) -> String {
+/// # Errors
+/// Fails if fails to write to `path_data`
+pub fn polygon_to_path(points: &str) -> Result<String, std::fmt::Error> {
     let mut path_data = String::new();
     let mut first = true;
     let all_points = points.split_whitespace().collect::<Vec<&str>>();
@@ -886,17 +901,18 @@ pub fn polygon_to_path(points: &str) -> String {
         let coords1 = all_points[idx];
         let coords2 = all_points[idx + 1];
         if first {
-            path_data.push_str(&format!("M {coords1} {coords2}"));
+            write!(path_data, "M {coords1} {coords2}")?;
             first = false;
         } else {
-            path_data.push_str(&format!(" L {coords1} {coords2}"));
+            write!(path_data, " L {coords1} {coords2}")?;
         }
     }
     path_data.push('Z'); // Close the polygon
-    path_data
+    Ok(path_data)
 }
 
 /// Convert a svg rect to a path data string
+#[must_use]
 pub fn rect_to_path(x: &str, y: &str, width: &str, height: &str) -> String {
     format!("M {x} {y} h {width} v {height} h -{width} Z")
 }
@@ -985,22 +1001,22 @@ mod tests {
     #[test]
     fn test_polyline_to_path() {
         // <polyline points="0,100 50,25 50,75 100,0" />
-        let path_data = polyline_to_path("0,100 50,25 50,75 100,0");
-        assert_eq!(path_data, "M 0,100 50,25 L 50,75 100,0")
+        let path_data = polyline_to_path("0,100 50,25 50,75 100,0").unwrap();
+        assert_eq!(path_data, "M 0,100 50,25 L 50,75 100,0");
     }
 
     #[test]
     fn test_line_to_path() {
         // <line x1="0" y1="80" x2="100" y2="20" />
         let path_data = line_to_path("0", "0", "80", "20");
-        assert_eq!(path_data, "M 0 0 L 80 20")
+        assert_eq!(path_data, "M 0 0 L 80 20");
     }
 
     #[test]
     fn test_polygon_to_path() {
         // <polygon points="0,100 50,25 50,75 100,0" />
-        let path_data = polygon_to_path("0,100 50,25 50,75 100,0");
-        assert_eq!(path_data, "M 0,100 50,25 L 50,75 100,0Z")
+        let path_data = polygon_to_path("0,100 50,25 50,75 100,0").unwrap();
+        assert_eq!(path_data, "M 0,100 50,25 L 50,75 100,0Z");
     }
 
     #[test]
@@ -1010,7 +1026,7 @@ mod tests {
         assert_eq!(
             path_data,
             "M 50 50 m 50, 0a 50,50 0 1,0 -100,0 a 50,50 0 1,0 100,0"
-        )
+        );
     }
 
     #[test]
@@ -1020,6 +1036,6 @@ mod tests {
         assert_eq!(
             path_data,
             "M0 50 a100 50 0 1,0 200 0 a100 50 0 1,0 -200 0 Z"
-        )
+        );
     }
 }

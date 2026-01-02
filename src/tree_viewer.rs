@@ -14,7 +14,7 @@ use crate::path::{
     rect_to_path,
 };
 
-/// TreeViewer Struct
+/// `TreeViewer` Struct
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct TreeViewer {
     /// Is multi line
@@ -95,7 +95,7 @@ impl TreeViewer {
                                 // edit width and height and viewbox
                                 ui.checkbox(&mut self.is_editable, "Editable (auto-write)");
                                 ui.collapsing("SVG", |ui| {
-                                    for (key, value) in e.attributes.iter_mut() {
+                                    for (key, value) in &mut e.attributes {
                                         ui.horizontal(|ui| {
                                             ui.label(key);
                                             ui.text_edit_singleline(value);
@@ -122,7 +122,7 @@ impl TreeViewer {
                                             e.children.push(xmltree::XMLNode::Element(
                                                 Element::new(&self.new_element_name),
                                             ));
-                                            self.new_element_name = Default::default();
+                                            self.new_element_name = String::default();
                                         }
                                     });
                                 });
@@ -137,7 +137,7 @@ impl TreeViewer {
                                         && let Ok(s) = String::from_utf8(buf)
                                     {
                                         *svg_str = s;
-                                    };
+                                    }
                                 }
                             }
                             Err(e) => {
@@ -149,6 +149,7 @@ impl TreeViewer {
     }
 
     /// Show the svg groups
+    #[allow(clippy::too_many_lines)]
     fn show_group(
         &mut self,
         ui: &mut Ui,
@@ -244,10 +245,16 @@ impl TreeViewer {
                                     {
                                         // Convert polyline to path logic here
                                         if let Some(points) = g.attributes.get("points") {
-                                            let path_data = polyline_to_path(points);
-                                            g.name = "path".to_string();
-                                            g.attributes.insert("d".to_string(), path_data);
-                                            g.attributes.shift_remove("points");
+                                            match polyline_to_path(points) {
+                                                Ok(path_data) => {
+                                                    g.name = "path".to_string();
+                                                    g.attributes.insert("d".to_string(), path_data);
+                                                    g.attributes.shift_remove("points");
+                                                }
+                                                Err(err) => {
+                                                    error_manager.add_error(err.to_string());
+                                                }
+                                            }
                                         }
                                     } else if e == "line" {
                                         // Convert line to path logic here
@@ -270,10 +277,16 @@ impl TreeViewer {
                                     {
                                         // Convert polygon to path logic here
                                         if let Some(points) = g.attributes.get("points") {
-                                            let path_data = polygon_to_path(points);
-                                            g.name = "path".to_string();
-                                            g.attributes.insert("d".to_string(), path_data);
-                                            g.attributes.shift_remove("points");
+                                            match polygon_to_path(points) {
+                                                Ok(path_data) => {
+                                                    g.name = "path".to_string();
+                                                    g.attributes.insert("d".to_string(), path_data);
+                                                    g.attributes.shift_remove("points");
+                                                }
+                                                Err(err) => {
+                                                    error_manager.add_error(err.to_string());
+                                                }
+                                            }
                                         }
                                     } else if e == "rect" {
                                         // Convert rectangle to path logic here
@@ -307,7 +320,7 @@ impl TreeViewer {
                                         })
                                         .body(|mut body| {
                                             let mut remove_idx = None;
-                                            for (key, value) in g.attributes.iter_mut() {
+                                            for (key, value) in &mut g.attributes {
                                                 body.row(0.0, |mut row| {
                                                     row.col(|ui| {
                                                         ui.scope(|ui| {
@@ -354,7 +367,7 @@ impl TreeViewer {
                                                     {
                                                         g.attributes.insert(
                                                             key_attr.clone(),
-                                                            "".to_string(),
+                                                            String::new(),
                                                         );
                                                         key_attr.clear();
                                                     }
@@ -399,6 +412,7 @@ impl TreeViewer {
     }
 
     /// Show current edition of the path
+    #[allow(clippy::too_many_lines)]
     fn show_current_edition(&mut self, ctx: &egui::Context, g: &mut Element) {
         let mut is_open = self.ref_group.is_some();
         Window::new("Edition")
@@ -527,18 +541,18 @@ impl TreeViewer {
                                         // remove first character from the value
                                         let numbers_part = curr_value[1..].to_string();
                                         let mut vec_ret = vec![];
-                                        for one_value in numbers_part.split(" ") {
+                                        for one_value in numbers_part.split(' ') {
                                             let mut value_float = one_value.parse().unwrap_or(0.0);
                                             ui.add(DragValue::new(&mut value_float));
                                             vec_ret.push(value_float);
                                         }
                                         let joined = vec_ret
                                             .iter()
-                                            .map(|val| val.to_string())
+                                            .map(std::string::ToString::to_string)
                                             .collect::<Vec<String>>()
                                             .join(" ");
                                         if joined != curr_value[1..] {
-                                            item_edit = Some((idx, format!("{letter}{joined}")))
+                                            item_edit = Some((idx, format!("{letter}{joined}")));
                                         }
                                     } else {
                                         // remove first character from the value
@@ -547,7 +561,7 @@ impl TreeViewer {
 
                                         if numbers_part != curr_value[1..] {
                                             item_edit =
-                                                Some((idx, format!("{letter}{numbers_part}")))
+                                                Some((idx, format!("{letter}{numbers_part}")));
                                         }
                                     }
                                 });
@@ -578,7 +592,7 @@ pub struct TreeViewerPanel;
 impl BladvakPanel for TreeViewerPanel {
     type App = GalagoApp;
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "SVG tree"
     }
 

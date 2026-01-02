@@ -14,7 +14,7 @@ impl GalagoApp {
         _error_manager: &mut bladvak::ErrorManager,
     ) {
         self.svg_is_valid = match self.update_svg(ui.ctx()) {
-            Ok(_) => true,
+            Ok(()) => true,
             Err(e) => {
                 if let Some(err) = e {
                     log::error!("SVG render error: {err}");

@@ -52,7 +52,7 @@ impl SvgRender {
     }
 
     /// Show the rendered svg
-    pub fn show(&self, ui: &mut Ui) -> Result<egui::Response, ()> {
+    #[allow(clippy::cast_precision_loss)]
         if let Some(texture_save) = &self.texture_save {
             let texture_size = texture_save.size();
             let image_size = ImageSize {
@@ -149,6 +149,9 @@ impl GalagoApp {
     /// Update the svg
     /// # Errors
     /// Return error if fails to render svg
+    #[allow(clippy::cast_sign_loss)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     pub fn update_svg(&mut self, ctx: &Context) -> Result<(), Option<AppError>> {
         if self.svg_render.texture_save.is_some()
             && self
@@ -200,7 +203,7 @@ impl GalagoApp {
                 TextureOptions::default(),
             );
             self.svg_render.texture_save = Some(texture_loaded);
-            self.svg_render.cached_svg = Some(self.svg.to_string());
+            self.svg_render.cached_svg = Some(self.svg.clone());
             return Ok(());
         }
         Err(None)
@@ -214,7 +217,7 @@ pub struct SvgViewerPanel;
 impl BladvakPanel for SvgViewerPanel {
     type App = GalagoApp;
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "SVG viewer"
     }
 

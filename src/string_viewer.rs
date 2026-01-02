@@ -36,7 +36,7 @@ pub struct StringViewerPanel;
 impl BladvakPanel for StringViewerPanel {
     type App = GalagoApp;
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "SVG String"
     }
 

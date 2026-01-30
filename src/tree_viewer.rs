@@ -95,12 +95,14 @@ impl TreeViewer {
                                 // edit width and height and viewbox
                                 ui.checkbox(&mut self.is_editable, "Editable (auto-write)");
                                 ui.collapsing("SVG", |ui| {
-                                    for (key, value) in &mut e.attributes {
-                                        ui.horizontal(|ui| {
-                                            ui.label(key);
-                                            ui.text_edit_singleline(value);
-                                        });
-                                    }
+                                    ui.add_enabled_ui(self.is_editable, |ui| {
+                                        for (key, value) in &mut e.attributes {
+                                            ui.horizontal(|ui| {
+                                                ui.label(key);
+                                                ui.text_edit_singleline(value);
+                                            });
+                                        }
+                                    });
                                 });
 
                                 self.show_group(

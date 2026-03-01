@@ -188,7 +188,7 @@ impl BladvakApp<'_> for GalagoApp {
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         if ui.button("Save").clicked() {
             ui.close();
-            let save_path = bladvak::utils::get_save_path(Some(PathBuf::from("file.svg")));
+            let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from("file.svg")));
             match save_path {
                 Ok(save_p) => {
                     self.save_path.clone_from(&save_p);

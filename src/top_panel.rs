@@ -1,6 +1,6 @@
 //! Top panel of Galago. Handling the menu and save function
 use bladvak::eframe::egui;
-use std::path::PathBuf;
+use std::path::{Path};
 
 use crate::GalagoApp;
 
@@ -20,7 +20,7 @@ impl GalagoApp {
     }
 
     /// Save the current svg
-    pub(crate) fn save_svg(&mut self, path_file: &PathBuf) -> Result<(), String> {
+    pub(crate) fn save_svg(&mut self, path_file: &Path) -> Result<(), String> {
         let bytes = self.svg.as_bytes();
         bladvak::utils::save_file(bytes, path_file)
     }

@@ -622,6 +622,7 @@ impl SvgPath {
 
     /// Toggles the coordinate type (absolute/relative) of the path segment at the given index.
     #[allow(clippy::too_many_lines)]
+    #[allow(unused_assignments)] // broken lint
     pub fn toggle_coord_type_at(&mut self, index: usize) {
         let mut pos = (0.0, 0.0);
         let mut subpath_start = (0.0, 0.0);

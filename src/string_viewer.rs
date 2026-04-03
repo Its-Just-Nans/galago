@@ -18,6 +18,7 @@ pub struct StringViewer {
     pub theme_font_size: f32,
 }
 
+/// Default font size
 const DEFAULT_FONT_SIZE: f32 = 12.0;
 
 impl Default for StringViewer {

@@ -12,6 +12,7 @@ pub struct SvgItem {
     pub inner: PathSegment,
 }
 
+/// Round a value
 fn round_to(value: f64, decimals: u64) -> f64 {
     let decimals = i32::try_from(decimals).unwrap_or(1);
     let factor = 10f64.powi(decimals);

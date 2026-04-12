@@ -1,8 +1,7 @@
 //! Path
 //! Good reading <https://razrfalcon.github.io/notes-on-svg-parsing/path-data.html>
 
-use std::fmt;
-use std::fmt::Write;
+use std::fmt::{Display, Formatter, Write};
 use svgtypes::{PathParser, PathSegment};
 
 /// Represents a single SVG path segment.
@@ -34,8 +33,8 @@ impl SvgItem {
     }
 }
 
-impl fmt::Display for SvgItem {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for SvgItem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let fmt = match self.inner {
             PathSegment::MoveTo { abs: _, x, y } | PathSegment::LineTo { abs: _, x, y } => {
                 // move to
@@ -853,8 +852,8 @@ impl SvgPath {
     }
 }
 
-impl fmt::Display for SvgPath {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for SvgPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
         for item in &self.items {
             let segment_str = item.to_string();

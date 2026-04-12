@@ -2,7 +2,7 @@
 
 use bladvak::ErrorManager;
 use bladvak::app::BladvakPanel;
-use bladvak::eframe::egui::{self, Color32, DragValue, Frame, Ui, Window};
+use bladvak::eframe::egui::{self, Color32, Frame, Window};
 use bladvak::egui_extras::{Column, TableBuilder};
 use std::collections::HashMap;
 use svgtypes::PathSegment;
@@ -77,7 +77,12 @@ impl Default for TreeViewer {
 
 impl TreeViewer {
     /// Show Tree Viewer
-    pub fn show(&mut self, ui: &mut Ui, svg_str: &mut String, error_manager: &mut ErrorManager) {
+    pub fn show(
+        &mut self,
+        ui: &mut egui::Ui,
+        svg_str: &mut String,
+        error_manager: &mut ErrorManager,
+    ) {
         Frame::new()
             .inner_margin(egui::Margin {
                 left: 5,
@@ -154,7 +159,7 @@ impl TreeViewer {
     #[allow(clippy::too_many_lines)]
     fn show_group(
         &mut self,
-        ui: &mut Ui,
+        ui: &mut egui::Ui,
         nodes: &mut [xmltree::XMLNode],
         curr_idx: Option<usize>,
         error_manager: &mut ErrorManager,
@@ -545,12 +550,12 @@ impl TreeViewer {
                                         let mut vec_ret = vec![];
                                         for one_value in numbers_part.split(' ') {
                                             let mut value_float = one_value.parse().unwrap_or(0.0);
-                                            ui.add(DragValue::new(&mut value_float));
+                                            ui.add(egui::DragValue::new(&mut value_float));
                                             vec_ret.push(value_float);
                                         }
                                         let joined = vec_ret
                                             .iter()
-                                            .map(std::string::ToString::to_string)
+                                            .map(ToString::to_string)
                                             .collect::<Vec<String>>()
                                             .join(" ");
                                         if joined != curr_value[1..] {

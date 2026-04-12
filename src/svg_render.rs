@@ -10,7 +10,7 @@ use bladvak::{
 };
 use egui::{
     Color32, Context, CornerRadius, ImageData, ImageFit, ImageSize, Rect, Sense, TextureHandle,
-    TextureOptions, Ui, Vec2, WidgetInfo, WidgetType, pos2,
+    TextureOptions, Vec2, WidgetInfo, WidgetType, pos2,
 };
 use resvg::tiny_skia::Pixmap;
 
@@ -53,7 +53,7 @@ impl SvgRender {
 
     /// Show the rendered svg
     #[allow(clippy::cast_precision_loss)]
-    pub fn show(&self, ui: &mut Ui) -> Result<egui::Response, ()> {
+    pub fn show(&self, ui: &mut egui::Ui) -> Result<egui::Response, ()> {
         if let Some(texture_save) = &self.texture_save {
             let texture_size = texture_save.size();
             let image_size = ImageSize {
@@ -109,7 +109,7 @@ impl SvgRender {
 
 impl GalagoApp {
     /// Render settings
-    pub fn show_render_settings(&mut self, ui: &mut Ui) {
+    pub fn show_render_settings(&mut self, ui: &mut egui::Ui) {
         if ui
             .checkbox(&mut self.svg_render.auto_scale, "Auto Scale SVG")
             .changed()

@@ -105,16 +105,18 @@ impl BladvakApp<'_> for GalagoApp {
             use std::fs;
 
             let path = &args[1];
-            match fs::read_to_string(path) {
+            let absolute_path = fs::canonicalize(path)?;
+            match fs::read_to_string(&absolute_path) {
                 Ok(svg) => {
                     let mut app = saved_state;
                     app.saved_svg.clone_from(&svg);
                     app.svg = svg;
+                    app.save_path = Some(absolute_path);
                     Ok(app)
                 }
                 Err(e) => {
-                    eprintln!("Failed to load svg '{path}': {e}");
-                    Err((format!("Failed to load svg '{path}')"), e).into())
+                    eprintln!("Failed to load svg '{}': {e}", absolute_path.display());
+                    Err((format!("Failed to load svg '{}')", absolute_path.display()), e).into())
                 }
             }
         } else {
@@ -188,7 +190,8 @@ impl BladvakApp<'_> for GalagoApp {
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         if ui.button("Save").clicked() {
             ui.close();
-            let save_path = bladvak::utils::get_save_path(Some(&PathBuf::from("file.svg")));
+            let current_save_path = self.save_path.clone().unwrap_or(PathBuf::from("file.svg"));
+            let save_path = bladvak::utils::get_save_path(Some(&current_save_path));
             match save_path {
                 Ok(save_p) => {
                     self.save_path.clone_from(&save_p);

@@ -116,7 +116,11 @@ impl BladvakApp<'_> for GalagoApp {
                 }
                 Err(e) => {
                     eprintln!("Failed to load svg '{}': {e}", absolute_path.display());
-                    Err((format!("Failed to load svg '{}')", absolute_path.display()), e).into())
+                    Err((
+                        format!("Failed to load svg '{}')", absolute_path.display()),
+                        e,
+                    )
+                        .into())
                 }
             }
         } else {

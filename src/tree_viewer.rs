@@ -429,10 +429,11 @@ impl TreeViewer {
             .min_height(100.0)
             .show(ctx, |ui| {
                 if let Some(path) = g.attributes.get_mut("d") {
+                    ui.text_edit_multiline(path);
                     let mut parsed_path = match SvgPath::parse(path) {
                         Ok(path) => path,
                         Err(e) => {
-                            ui.label(format!("Invalid path: {e}"));
+                            ui.colored_label(Color32::RED, format!("Invalid path: {e}"));
                             return;
                         }
                     };

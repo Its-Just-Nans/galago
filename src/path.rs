@@ -850,6 +850,242 @@ impl SvgPath {
         }
         Err("Invalid index".to_string())
     }
+
+    /// Reverse the path
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
+    pub fn reversed(&self) -> SvgPath {
+        let mut path = self.clone();
+        path.absolute();
+
+        let mut contours: Vec<Vec<SvgItem>> = Vec::new();
+        let mut current = Vec::new();
+
+        for item in path.items {
+            match item.inner {
+                PathSegment::MoveTo { .. } => {
+                    if !current.is_empty() {
+                        contours.push(current);
+                        current = Vec::new();
+                    }
+                    current.push(item);
+                }
+
+                PathSegment::ClosePath { .. } => {
+                    current.push(item);
+                    contours.push(current);
+                    current = Vec::new();
+                }
+
+                _ => current.push(item),
+            }
+        }
+
+        if !current.is_empty() {
+            contours.push(current);
+        }
+
+        let mut out = Vec::new();
+        let mut carry_point = (0.0, 0.0);
+
+        let mut reversed_contours = Vec::new();
+        for contour in &contours {
+            let (rev, end_point) = Self::reverse_contour(contour, carry_point);
+            carry_point = end_point;
+            reversed_contours.push(rev);
+        }
+
+        for rev in reversed_contours.into_iter().rev() {
+            out.extend(rev);
+        }
+
+        SvgPath { items: out }
+    }
+
+    /// Reverse the contours
+    #[allow(clippy::too_many_lines)]
+    fn reverse_contour(contour: &[SvgItem], carry_point: (f64, f64)) -> (Vec<SvgItem>, (f64, f64)) {
+        if contour.is_empty() {
+            return (vec![], carry_point);
+        }
+
+        let mut pts = Vec::<(f64, f64)>::new();
+
+        let mut start = carry_point;
+        let mut cur = carry_point;
+
+        pts.push(cur);
+
+        let mut forward_ctrl2: Vec<Option<(f64, f64)>> = vec![None];
+
+        for item in contour {
+            match item.inner {
+                PathSegment::MoveTo { x, y, .. } => {
+                    start = (x, y);
+                    cur = start;
+                    forward_ctrl2.push(None);
+                }
+                PathSegment::LineTo { x, y, .. }
+                | PathSegment::Quadratic { x, y, .. }
+                | PathSegment::SmoothQuadratic { x, y, .. }
+                | PathSegment::EllipticalArc { x, y, .. } => {
+                    cur = (x, y);
+                    forward_ctrl2.push(None);
+                }
+                PathSegment::CurveTo { x, y, x2, y2, .. }
+                | PathSegment::SmoothCurveTo { x, y, x2, y2, .. } => {
+                    cur = (x, y);
+                    forward_ctrl2.push(Some((x2, y2)));
+                }
+                PathSegment::HorizontalLineTo { x, .. } => {
+                    cur.0 = x;
+                    forward_ctrl2.push(None);
+                }
+                PathSegment::VerticalLineTo { y, .. } => {
+                    cur.1 = y;
+                    forward_ctrl2.push(None);
+                }
+
+                PathSegment::ClosePath { .. } => {
+                    cur = start;
+                    forward_ctrl2.push(None);
+                }
+            }
+
+            pts.push(cur);
+        }
+
+        let closed = matches!(
+            contour.last().map(|c| &c.inner),
+            Some(PathSegment::ClosePath { .. })
+        );
+
+        // pts[0] = contour start (carried-in or from this contour's own MoveTo)
+        // pts[k] = point after contour[k-1] runs, for k = 1..=contour.len()
+        let last_idx = if closed { pts.len() - 2 } else { pts.len() - 1 };
+        let forward_end_point = pts[contour.len()];
+
+        if last_idx == 0 {
+            // Degenerate contour (e.g. a lone MoveTo): nothing to reverse.
+            return (vec![], forward_end_point);
+        }
+
+        let mut out = Vec::new();
+
+        // -------------------------
+        // 2. start reversed path
+        // -------------------------
+        out.push(SvgItem {
+            inner: PathSegment::MoveTo {
+                abs: true,
+                x: pts[last_idx].0,
+                y: pts[last_idx].1,
+            },
+        });
+
+        // -------------------------
+        // 3. reverse walk
+        // -------------------------
+        // `i` indexes into `contour` (0-based) and corresponds to pts[i+1]
+        // being its end point and pts[i] being its start point.
+        for i in (0..last_idx).rev() {
+            let seg_start = pts[i]; // forward start of contour[i]
+            let seg_end = pts[i + 1]; // forward end of contour[i] == prev in old code
+
+            match contour[i].inner {
+                PathSegment::LineTo { .. }
+                | PathSegment::HorizontalLineTo { .. }
+                | PathSegment::VerticalLineTo { .. } => {
+                    out.push(SvgItem {
+                        inner: PathSegment::LineTo {
+                            abs: true,
+                            x: seg_start.0,
+                            y: seg_start.1,
+                        },
+                    });
+                }
+
+                PathSegment::CurveTo { x1, y1, x2, y2, .. } => {
+                    out.push(SvgItem {
+                        inner: PathSegment::CurveTo {
+                            abs: true,
+                            x1: x2,
+                            y1: y2,
+                            x2: x1,
+                            y2: y1,
+                            x: seg_start.0,
+                            y: seg_start.1,
+                        },
+                    });
+                }
+
+                PathSegment::SmoothCurveTo { x2, y2, .. } => {
+                    let prev_ctrl2 = forward_ctrl2[i].unwrap_or(seg_start);
+
+                    let rx = 2.0 * seg_start.0 - prev_ctrl2.0;
+                    let ry = 2.0 * seg_start.1 - prev_ctrl2.1;
+
+                    out.push(SvgItem {
+                        inner: PathSegment::CurveTo {
+                            abs: true,
+                            x1: x2,
+                            y1: y2,
+                            x2: rx,
+                            y2: ry,
+                            x: seg_start.0,
+                            y: seg_start.1,
+                        },
+                    });
+                }
+
+                PathSegment::Quadratic { x1, y1, .. } => {
+                    out.push(SvgItem {
+                        inner: PathSegment::Quadratic {
+                            abs: true,
+                            x1,
+                            y1,
+                            x: seg_start.0,
+                            y: seg_start.1,
+                        },
+                    });
+                }
+
+                PathSegment::EllipticalArc {
+                    rx,
+                    ry,
+                    x_axis_rotation,
+                    large_arc,
+                    sweep,
+                    ..
+                } => {
+                    out.push(SvgItem {
+                        inner: PathSegment::EllipticalArc {
+                            abs: true,
+                            rx,
+                            ry,
+                            x_axis_rotation,
+                            large_arc,
+                            sweep: !sweep,
+                            x: seg_start.0,
+                            y: seg_start.1,
+                        },
+                    });
+                }
+
+                _ => {}
+            }
+
+            let _ = seg_end; // (kept for clarity; equals pts[i+1])
+        }
+
+        if closed {
+            out.push(SvgItem {
+                inner: PathSegment::ClosePath { abs: true },
+            });
+        }
+
+        (out, forward_end_point)
+    }
 }
 
 impl Display for SvgPath {
@@ -1037,6 +1273,46 @@ mod tests {
         assert_eq!(
             path_data,
             "M0 50 a100 50 0 1,0 200 0 a100 50 0 1,0 -200 0 Z"
+        );
+    }
+
+    #[test]
+    fn test_path_reverse() {
+        let parsed = SvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104Z").unwrap();
+        eprintln!("{parsed}");
+        assert_eq!(
+            parsed.reversed().to_string(),
+            "M174 104C160 104 103 104 90 94C79 83 71 72 55 66C45 62 -4 49 21 109C34 142 46 154 76 172C79 172 78 189 80 207C84 237 113 271 174 270Z"
+        );
+    }
+
+    #[test]
+    fn test_path_reversed_1() {
+        let parsed = SvgPath::parse("M0 50 a100 50 0 1,0 200 0 a100 50 0 1,0 -200 0 Z").unwrap();
+        eprintln!("{parsed}");
+        assert_eq!(
+            parsed.reversed().to_string(),
+            "M0 50A100 50 0 1 1 200 50A100 50 0 1 1 0 50Z"
+        );
+    }
+
+    #[test]
+    fn test_path_reversed_2() {
+        let parsed = SvgPath::parse("M 5 2 L 9 2 L 9 6 Z L 1 7 L 4 9 Z L 6 9 L 8 7 Z").unwrap();
+        eprintln!("{parsed}");
+        assert_eq!(
+            parsed.reversed().to_string(),
+            "M8 7L6 9L5 2ZM4 9L1 7L5 2ZM9 6L9 2L5 2Z"
+        );
+    }
+
+    #[test]
+    fn test_path_reversed_3() {
+        let parsed = SvgPath::parse("M133 185C128 185 126 183 126 179S128 172 133 172 140 175 140 179 137 185 133 185ZM116 202C125 205 134 204 141 197 149 190 152 181 149 171 147 165 141 158 136 155 116 145 94 163 100 184 102 191 109 199 116 202Z").unwrap();
+        eprintln!("{parsed}");
+        assert_eq!(
+            parsed.reversed().to_string(),
+            "M116 202C109 199 102 191 100 184C94 163 116 145 136 155C141 158 147 165 149 171C152 181 149 190 141 197C134 204 125 205 116 202ZM133 185C137 185 140 183 140 179C140 175 138 172 133 172C128 172 126 175 126 179C126 183 128 185 133 185Z"
         );
     }
 }

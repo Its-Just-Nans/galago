@@ -525,6 +525,15 @@ impl TreeViewer {
                                 *path = parsed_path.to_string();
                             });
                     });
+                    ui.horizontal(|ui| {
+                        if ui
+                            .button("Reverse")
+                            .on_hover_text("Reverse the path")
+                            .clicked()
+                        {
+                            *path = parsed_path.reversed().to_string();
+                        }
+                    });
 
                     egui::ScrollArea::vertical()
                         .id_salt("string_viewer")

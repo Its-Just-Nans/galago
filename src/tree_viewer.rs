@@ -101,12 +101,7 @@ impl TreeViewer {
                                 ui.checkbox(&mut self.is_editable, "Editable (auto-write)");
                                 ui.collapsing("SVG", |ui| {
                                     ui.add_enabled_ui(self.is_editable, |ui| {
-                                        for (key, value) in &mut e.attributes {
-                                            ui.horizontal(|ui| {
-                                                ui.label(key);
-                                                ui.text_edit_singleline(value);
-                                            });
-                                        }
+                                        self.show_attributes(ui, e, 0);
                                     });
                                 });
 
@@ -160,12 +155,13 @@ impl TreeViewer {
     fn show_group(
         &mut self,
         ui: &mut egui::Ui,
-        nodes: &mut [xmltree::XMLNode],
+        nodes: &mut Vec<xmltree::XMLNode>,
         curr_idx: Option<usize>,
         error_manager: &mut ErrorManager,
         is_editable: bool,
     ) {
         let current_idx = curr_idx.unwrap_or(0);
+        let mut idx_to_remove = None;
         for (idx, node) in nodes.iter_mut().enumerate() {
             match node {
                 xmltree::XMLNode::Element(g) => match g.name.clone().as_str() {
@@ -193,17 +189,30 @@ impl TreeViewer {
                             .show(ui, |ui| {
                                 ui.add_enabled_ui(is_editable, |ui| {
                                     if e == "path" {
-                                        if ui.button("edit").clicked() {
-                                            match self.ref_group {
-                                                Some(i) if i == idx => {
-                                                    self.ref_group = None; // Deselect if already selected
-                                                }
-                                                _ => {
-                                                    // Select the current group
-                                                    self.ref_group = Some(idx);
+                                        ui.horizontal(|ui| {
+                                            if ui.button("edit").clicked() {
+                                                match self.ref_group {
+                                                    Some(i) if i == idx => {
+                                                        self.ref_group = None; // Deselect if already selected
+                                                    }
+                                                    _ => {
+                                                        // Select the current group
+                                                        self.ref_group = Some(idx);
+                                                    }
                                                 }
                                             }
-                                        }
+                                            ui.scope(|ui| {
+                                                ui.style_mut()
+                                                    .visuals
+                                                    .widgets
+                                                    .hovered
+                                                    .weak_bg_fill = Color32::RED;
+
+                                                if ui.button("delete").clicked() {
+                                                    idx_to_remove = Some(idx);
+                                                }
+                                            });
+                                        });
                                     } else if e == "circle" {
                                         // Convert circle to path logic here
                                         // For example, you can create a path string based on circle attributes
@@ -314,77 +323,7 @@ impl TreeViewer {
                                             }
                                         }
                                     }
-                                    TableBuilder::new(ui)
-                                        .column(Column::auto())
-                                        .column(Column::remainder())
-                                        .header(20.0, |mut header| {
-                                            header.col(|ui| {
-                                                ui.heading("attribute");
-                                            });
-                                            header.col(|ui| {
-                                                ui.heading("value");
-                                            });
-                                        })
-                                        .body(|mut body| {
-                                            let mut remove_idx = None;
-                                            for (key, value) in &mut g.attributes {
-                                                body.row(0.0, |mut row| {
-                                                    row.col(|ui| {
-                                                        ui.scope(|ui| {
-                                                            ui.style_mut()
-                                                                .visuals
-                                                                .widgets
-                                                                .hovered
-                                                                .weak_bg_fill = Color32::RED;
-
-                                                            if ui
-                                                                .button(key)
-                                                                .on_hover_text(
-                                                                    "Remove this attribute",
-                                                                )
-                                                                .clicked()
-                                                            {
-                                                                remove_idx = Some(key.clone());
-                                                            }
-                                                        });
-                                                    });
-                                                    row.col(|ui| {
-                                                        if self.is_multi_line {
-                                                            ui.text_edit_multiline(value);
-                                                        } else {
-                                                            ui.text_edit_singleline(value);
-                                                        }
-                                                    });
-                                                });
-                                            }
-                                            let key_attr =
-                                                self.attributes_temp.entry(idx).or_default();
-                                            body.row(0.0, |mut row| {
-                                                row.col(|ui| {
-                                                    ui.horizontal(|ui| {
-                                                        ui.text_edit_singleline(key_attr);
-                                                    });
-                                                });
-                                                row.col(|ui| {
-                                                    if ui
-                                                        .button("Add key")
-                                                        .on_hover_text("Add new attribute")
-                                                        .clicked()
-                                                        && !key_attr.is_empty()
-                                                    {
-                                                        g.attributes.insert(
-                                                            key_attr.clone(),
-                                                            String::new(),
-                                                        );
-                                                        key_attr.clear();
-                                                    }
-                                                });
-                                            });
-
-                                            if let Some(idx) = remove_idx {
-                                                g.attributes.shift_remove(&idx);
-                                            }
-                                        });
+                                    self.show_attributes(ui, g, idx + 1);
                                 });
                             });
                         if let Some(index) = self.ref_group
@@ -415,6 +354,9 @@ impl TreeViewer {
                     ui.label(format!("Unknown node: {node:?}"));
                 }
             }
+        }
+        if let Some(idx) = idx_to_remove {
+            nodes.remove(idx);
         }
     }
 
@@ -598,6 +540,71 @@ impl TreeViewer {
         if !is_open {
             self.ref_group = None; // Reset the reference group when the edition window is closed
         }
+    }
+
+    /// Show the attributes of an Element
+    fn show_attributes(&mut self, ui: &mut egui::Ui, e: &mut Element, idx: usize) {
+        TableBuilder::new(ui)
+            .column(Column::auto())
+            .column(Column::remainder())
+            .header(20.0, |mut header| {
+                header.col(|ui| {
+                    ui.heading("attribute");
+                });
+                header.col(|ui| {
+                    ui.heading("value");
+                });
+            })
+            .body(|mut body| {
+                let mut remove_idx = None;
+                for (key, value) in &mut e.attributes {
+                    body.row(0.0, |mut row| {
+                        row.col(|ui| {
+                            ui.scope(|ui| {
+                                ui.style_mut().visuals.widgets.hovered.weak_bg_fill = Color32::RED;
+
+                                if ui
+                                    .button(key)
+                                    .on_hover_text("Remove this attribute")
+                                    .clicked()
+                                {
+                                    remove_idx = Some(key.clone());
+                                }
+                            });
+                        });
+                        row.col(|ui| {
+                            if self.is_multi_line {
+                                ui.text_edit_multiline(value);
+                            } else {
+                                ui.text_edit_singleline(value);
+                            }
+                        });
+                    });
+                }
+                let key_attr = self.attributes_temp.entry(idx).or_default();
+                body.row(0.0, |mut row| {
+                    row.col(|ui| {
+                        ui.horizontal(|ui| {
+                            ui.text_edit_singleline(key_attr);
+                        });
+                    });
+                    row.col(|ui| {
+                        if ui
+                            .button("Add key")
+                            .on_hover_text("Add new attribute")
+                            .clicked()
+                            && !key_attr.is_empty()
+                        {
+                            e.attributes.insert(key_attr.clone(), String::new());
+                            key_attr.clear();
+                        }
+                    });
+                });
+
+                if let Some(idx) = remove_idx {
+                    e.attributes.shift_remove(&idx);
+                }
+            });
     }
 }
 

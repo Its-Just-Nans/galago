@@ -423,9 +423,8 @@ impl TreeViewer {
     fn show_current_edition(&mut self, ctx: &egui::Context, g: &mut Element) {
         let mut is_open = self.ref_group.is_some();
         Window::new("Edition")
-            .resizable(true)
+            .scroll(true)
             .open(&mut is_open)
-            .min_width(500.0)
             .min_height(100.0)
             .show(ctx, |ui| {
                 if let Some(path) = g.attributes.get_mut("d") {

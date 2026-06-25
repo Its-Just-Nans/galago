@@ -43,7 +43,7 @@ pub struct GalagoApp {
     pub(crate) should_reset_view: bool,
 
     /// Path to save the svg
-    pub(crate) save_path: Option<PathBuf>,
+    pub(crate) filename: Option<PathBuf>,
 
     /// Svg is valid
     pub(crate) svg_is_valid: bool,
@@ -69,7 +69,7 @@ impl Default for GalagoApp {
             grid: Grid::default(),
             svg_render: SvgRender::default(),
             should_reset_view: false,
-            save_path: None,
+            filename: None,
             svg_is_valid: true,
             usvg_options,
         }
@@ -111,7 +111,7 @@ impl BladvakApp<'_> for GalagoApp {
                     let mut app = saved_state;
                     app.saved_svg.clone_from(&svg);
                     app.svg = svg;
-                    app.save_path = Some(absolute_path);
+                    app.filename = Some(absolute_path);
                     Ok(app)
                 }
                 Err(e) => {
@@ -194,11 +194,11 @@ impl BladvakApp<'_> for GalagoApp {
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
         if ui.button("Save").clicked() {
             ui.close();
-            let current_save_path = self.save_path.clone().unwrap_or(PathBuf::from("file.svg"));
+            let current_save_path = self.filename.clone().unwrap_or(PathBuf::from("file.svg"));
             let save_path = bladvak::utils::get_save_path(Some(&current_save_path));
             match save_path {
                 Ok(save_p) => {
-                    self.save_path.clone_from(&save_p);
+                    self.filename.clone_from(&save_p);
                     if let Some(path_to_save) = save_p
                         && let Err(err) = self.save_svg(&path_to_save)
                     {

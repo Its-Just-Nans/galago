@@ -17,6 +17,10 @@ impl GalagoApp {
         if ui.button("Copy").clicked() {
             ui.ctx().copy_text(self.svg.clone());
         }
+        if let Some(file) = &self.filename {
+            ui.separator();
+            ui.label(format!("File: {}", file.display()));
+        }
     }
 
     /// Save the current svg

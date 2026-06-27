@@ -3,7 +3,7 @@
 use bladvak::eframe::egui::{self};
 use bladvak::utils::grid::Grid;
 use bladvak::utils::is_native;
-use bladvak::{AppError, BladvakApp, File, eframe};
+use bladvak::{AppError, BladvakApp, ErrorManager, File, eframe};
 use resvg::usvg;
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -100,6 +100,7 @@ impl BladvakApp<'_> for GalagoApp {
         saved_state: Self,
         _cc: &eframe::CreationContext<'_>,
         args: &[String],
+        _error_manager: &mut ErrorManager,
     ) -> Result<Self, AppError> {
         if is_native() && args.len() > 1 {
             use std::fs;

@@ -17,9 +17,13 @@ impl GalagoApp {
         if ui.button("Copy").clicked() {
             ui.ctx().copy_text(self.svg.clone());
         }
-        if let Some(file) = &self.filename {
+        if let Some(filename) = &self.filename {
+            let filename = match filename.file_name() {
+                Some(file_n) => file_n,
+                None => filename.as_os_str(),
+            };
             ui.separator();
-            ui.label(format!("File: {}", file.display()));
+            ui.label(format!("File: {}", filename.display()));
         }
     }
 

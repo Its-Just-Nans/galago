@@ -641,6 +641,9 @@ impl BladvakPanel for TreeViewerPanel {
     }
 
     fn ui(&self, app: &mut Self::App, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
-        app.tree_viewer.show(ui, &mut app.svg, error_manager);
+        let Some(document) = app.documents.get_current_doc_mut() else {
+            return;
+        };
+        app.tree_viewer.show(ui, &mut document.svg, error_manager);
     }
 }

@@ -78,6 +78,9 @@ impl GalagoApp {
     /// Show the String Viewer
     pub fn show_svg_string(&mut self, ui: &mut egui::Ui, error_manager: &mut ErrorManager) {
         Frame::new().show(ui, |ui| {
+            let Some(document) = self.documents.get_current_doc_mut() else {
+                return;
+            };
             let mut layouter = |ui: &egui::Ui, buf: &dyn egui::TextBuffer, wrap_width: f32| {
                 let mut layout_job = egui_extras::syntax_highlighting::highlight(
                     ui.ctx(),
@@ -93,14 +96,14 @@ impl GalagoApp {
             egui::ScrollArea::vertical()
                 .max_height(height / 2.0 - 40.0)
                 .show(ui, |ui| {
-                    let multiliner = egui::TextEdit::multiline(&mut self.svg)
+                    let multiliner = egui::TextEdit::multiline(&mut document.svg)
                         .font(egui::FontId::monospace(self.string_viewer.theme_font_size)) // for cursor height
                         .code_editor()
                         .desired_rows(10)
                         .lock_focus(true)
                         .desired_width(f32::INFINITY);
 
-                    if self.svg_is_valid {
+                    if document.svg_is_valid {
                         ui.add(multiliner.layouter(&mut layouter));
                     } else {
                         ui.add(multiliner.text_color(Color32::RED)).on_hover_text(
@@ -110,11 +113,11 @@ impl GalagoApp {
                 });
             ui.horizontal(|ui| {
                 if ui.button("Copy svg").clicked() {
-                    ui.ctx().copy_text(self.svg.clone());
+                    ui.ctx().copy_text(document.svg.clone());
                 }
                 if ui.button("Simplify").clicked() {
-                    match resvg::usvg::Tree::from_str(&self.svg, &self.usvg_options) {
-                        Ok(tree) => self.svg = tree.to_string(&WriteOptions::default()),
+                    match resvg::usvg::Tree::from_str(&document.svg, &self.usvg_options) {
+                        Ok(tree) => document.svg = tree.to_string(&WriteOptions::default()),
                         Err(e) => {
                             error_manager.add_error(AppError::new_with_source(
                                 "Cannot simplify the svg",

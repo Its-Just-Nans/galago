@@ -22,7 +22,9 @@
 mod app;
 pub use app::GalagoApp;
 mod central_panel;
+mod document;
 pub mod path;
+mod settings;
 mod string_viewer;
 mod svg_render;
 mod top_panel;

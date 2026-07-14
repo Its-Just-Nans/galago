@@ -33,7 +33,6 @@ pub struct SvgRender {
     /// Sizer for scaling the SVG
     scaler: u32,
 }
-
 impl Default for SvgRender {
     fn default() -> Self {
         Self {
@@ -42,6 +41,16 @@ impl Default for SvgRender {
             auto_scale: true,
             scaler: 1,
         }
+    }
+}
+
+impl std::fmt::Debug for SvgRender {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SvgRender")
+            .field("cached_svg", &self.cached_svg)
+            .field("auto_scale", &self.auto_scale)
+            .field("scaler", &self.scaler)
+            .finish_non_exhaustive()
     }
 }
 
@@ -111,19 +120,26 @@ impl GalagoApp {
     /// Render settings
     pub fn show_render_settings(&mut self, ui: &mut egui::Ui) {
         if ui
-            .checkbox(&mut self.svg_render.auto_scale, "Auto Scale SVG")
+            .checkbox(&mut self.settings.auto_scale, "Auto Scale SVG")
             .changed()
         {
-            self.svg_render.stale_render();
+            for one_doc in self.documents.iter_mut() {
+                one_doc.svg_render.auto_scale = self.settings.auto_scale;
+                one_doc.svg_render.stale_render();
+            }
         }
         if ui
             .add_enabled(
-                !self.svg_render.auto_scale,
-                egui::Slider::new(&mut self.svg_render.scaler, 1..=10).text("SVG Scaler"),
+                !self.settings.auto_scale,
+                egui::Slider::new(&mut self.settings.global_scaler, 1..=10).text("SVG Scaler"),
             )
             .changed()
         {
-            self.svg_render.stale_render();
+            for one_doc in self.documents.iter_mut() {
+                one_doc.svg_render.auto_scale = self.settings.auto_scale;
+                one_doc.svg_render.scaler = self.settings.global_scaler;
+                one_doc.svg_render.stale_render();
+            }
         }
         ui.collapsing(
             format!("Loaded fonts ({})", self.usvg_options.fontdb.len()),
@@ -154,34 +170,37 @@ impl GalagoApp {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_precision_loss)]
     pub fn update_svg(&mut self, ctx: &Context) -> Result<(), Option<AppError>> {
-        if self.svg_render.texture_save.is_some()
-            && self
+        let Some(document) = self.documents.get_current_doc_mut() else {
+            return Ok(());
+        };
+        if document.svg_render.texture_save.is_some()
+            && document
                 .svg_render
                 .cached_svg
                 .as_deref()
-                .is_some_and(|cached| self.svg == cached)
+                .is_some_and(|cached| document.svg == cached)
         {
             return Ok(());
         }
         log::debug!("Rendering SVG");
 
-        if let Ok(rtree) = resvg::usvg::Tree::from_str(&self.svg, &self.usvg_options) {
-            if self.svg_render.auto_scale {
+        if let Ok(rtree) = resvg::usvg::Tree::from_str(&document.svg, &self.usvg_options) {
+            if document.svg_render.auto_scale {
                 // Calculate the sizer based on the SVG size
                 let size = rtree.size().width().max(rtree.size().height()) as u32;
                 if size < 500 {
-                    self.svg_render.scaler = 6;
+                    document.svg_render.scaler = 6;
                 } else if size < 1000 {
-                    self.svg_render.scaler = 4;
+                    document.svg_render.scaler = 4;
                 } else if size < 2000 {
-                    self.svg_render.scaler = 2;
+                    document.svg_render.scaler = 2;
                 } else {
-                    self.svg_render.scaler = 1;
+                    document.svg_render.scaler = 1;
                 }
             }
             let (w, h) = (
-                rtree.size().width() as u32 * self.svg_render.scaler,
-                rtree.size().height() as u32 * self.svg_render.scaler,
+                rtree.size().width() as u32 * document.svg_render.scaler,
+                rtree.size().height() as u32 * document.svg_render.scaler,
             );
             let mut pixmap = Pixmap::new(w, h).ok_or_else(|| {
                 Some(AppError::new(format!(
@@ -190,8 +209,8 @@ impl GalagoApp {
             })?;
 
             let transform = resvg::tiny_skia::Transform {
-                sx: self.svg_render.scaler as f32,
-                sy: self.svg_render.scaler as f32,
+                sx: document.svg_render.scaler as f32,
+                sy: document.svg_render.scaler as f32,
                 ..Default::default()
             };
             resvg::render(&rtree, transform, &mut pixmap.as_mut());
@@ -203,8 +222,8 @@ impl GalagoApp {
                 ImageData::Color(Arc::new(image)),
                 TextureOptions::default(),
             );
-            self.svg_render.texture_save = Some(texture_loaded);
-            self.svg_render.cached_svg = Some(self.svg.clone());
+            document.svg_render.texture_save = Some(texture_loaded);
+            document.svg_render.cached_svg = Some(document.svg.clone());
             return Ok(());
         }
         Err(None)
@@ -243,9 +262,11 @@ impl BladvakPanel for SvgViewerPanel {
         app.grid.show_settings(ui);
 
         ui.separator();
-        if ui.button("Default svg").clicked() {
-            app.saved_svg = GalagoApp::BASE_SVG.to_string();
-            app.svg = GalagoApp::BASE_SVG.to_string();
+        if let Some(document) = app.documents.get_current_doc_mut()
+            && ui.button("Default svg").clicked()
+        {
+            document.saved_svg = GalagoApp::BASE_SVG.to_string();
+            document.svg = GalagoApp::BASE_SVG.to_string();
         }
     }
 

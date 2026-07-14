@@ -2,6 +2,7 @@
 
 use bladvak::app::BladvakPanel;
 use bladvak::eframe::egui::{self, Color32, Frame};
+use bladvak::egui_extras::syntax_highlighting::CodeTheme;
 use bladvak::{AppError, ErrorManager, egui_extras};
 use resvg::usvg::WriteOptions;
 use std::sync::Arc;
@@ -12,7 +13,7 @@ use crate::GalagoApp;
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct StringViewer {
     /// Theme
-    pub theme: egui_extras::syntax_highlighting::CodeTheme,
+    pub theme: CodeTheme,
 
     /// Font size for the theme
     pub theme_font_size: f32,
@@ -24,7 +25,7 @@ const DEFAULT_FONT_SIZE: f32 = 12.0;
 impl Default for StringViewer {
     fn default() -> Self {
         Self {
-            theme: egui_extras::syntax_highlighting::CodeTheme::dark(DEFAULT_FONT_SIZE),
+            theme: CodeTheme::dark(DEFAULT_FONT_SIZE),
             theme_font_size: DEFAULT_FONT_SIZE,
         }
     }
@@ -59,7 +60,11 @@ impl BladvakPanel for StringViewerPanel {
             .on_hover_text("Font size for the code editor")
             .changed()
         {
-            // TODO wait for https://github.com/emilk/egui/pull/7684
+            // https://github.com/emilk/egui/pull/7684
+            app.string_viewer.theme = app
+                .string_viewer
+                .theme
+                .with_font_size(app.string_viewer.theme_font_size);
         }
         app.string_viewer.theme.ui(ui);
         app.string_viewer.theme.clone().store_in_memory(ui.ctx());

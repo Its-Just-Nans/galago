@@ -89,7 +89,7 @@ impl BladvakApp<'_> for GalagoApp {
     ) -> Result<Self, AppError> {
         if is_native() && args.len() > 1 {
             use std::fs;
-            /// TODO handle more args with documents
+            // TODO handle more args with documents
             let path = &args[1];
             let absolute_path = fs::canonicalize(path)?;
             match fs::read_to_string(&absolute_path) {

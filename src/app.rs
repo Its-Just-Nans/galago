@@ -6,6 +6,7 @@ use bladvak::utils::is_native;
 use bladvak::{AppError, BladvakApp, ErrorManager, File, eframe, utils::Documents};
 use resvg::usvg;
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use crate::document::Document;
 use crate::settings::AppSettings;
@@ -45,6 +46,7 @@ impl Default for GalagoApp {
             saved_svg: Self::BASE_SVG.to_string(),
             scene_rect: egui::Rect::NAN,
             svg_is_valid: true,
+            filename: PathBuf::from("galago.svg"),
             ..Default::default()
         };
         let mut documents = Documents::default();

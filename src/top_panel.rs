@@ -22,14 +22,12 @@ impl GalagoApp {
         }
 
         // TODO loop documents
-        if let Some(filename) = &document.filename {
-            let filename = match filename.file_name() {
-                Some(file_n) => file_n,
-                None => filename.as_os_str(),
-            };
-            ui.separator();
-            ui.label(format!("File: {}", filename.display()));
-        }
+        let filename = match document.filename.file_name() {
+            Some(file_n) => file_n,
+            None => document.filename.as_os_str(),
+        };
+        ui.separator();
+        ui.label(format!("File: {}", filename.display()));
     }
 
     /// Save the current svg

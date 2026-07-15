@@ -6,7 +6,6 @@ use bladvak::utils::is_native;
 use bladvak::{AppError, BladvakApp, ErrorManager, File, eframe, utils::Documents};
 use resvg::usvg;
 use std::fmt::Debug;
-use std::path::PathBuf;
 
 use crate::document::Document;
 use crate::settings::AppSettings;
@@ -98,7 +97,7 @@ impl BladvakApp<'_> for GalagoApp {
                     if let Some(document) = app.documents.get_current_doc_mut() {
                         document.saved_svg.clone_from(&svg);
                         document.svg = svg;
-                        document.filename = Some(absolute_path);
+                        document.filename = absolute_path;
                     }
                     Ok(app)
                 }
@@ -192,18 +191,15 @@ impl BladvakApp<'_> for GalagoApp {
                 return;
             };
 
-            let current_save_path = document
-                .filename
-                .clone()
-                .unwrap_or(PathBuf::from("file.svg"));
+            let current_save_path = document.filename.clone();
             let save_path = bladvak::utils::get_save_path(Some(&current_save_path));
             match save_path {
                 Ok(save_p) => {
-                    document.filename.clone_from(&save_p);
-                    if let Some(path_to_save) = save_p
-                        && let Err(err) = self.save_svg(&path_to_save)
-                    {
-                        error_manager.add_error(err);
+                    if let Some(path_to_save) = save_p {
+                        document.filename.clone_from(&path_to_save);
+                        if let Err(err) = self.save_svg(&path_to_save) {
+                            error_manager.add_error(err);
+                        }
                     }
                 }
                 Err(e) => {

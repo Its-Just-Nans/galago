@@ -1,8 +1,8 @@
 //! Document
 
-use std::path::PathBuf;
-
 use bladvak::eframe::egui;
+use bladvak::utils::document::DocumentTrait;
+use std::path::{Path, PathBuf};
 
 use crate::svg_render::SvgRender;
 
@@ -22,7 +22,7 @@ pub(crate) struct Document {
     /// should reset the view
     pub(crate) should_reset_view: bool,
     /// Path to save the svg
-    pub(crate) filename: Option<PathBuf>,
+    pub(crate) filename: PathBuf,
     /// Svg is valid
     pub(crate) svg_is_valid: bool,
 }
@@ -36,8 +36,14 @@ impl Default for Document {
             scene_rect: egui::Rect::NAN,
             svg_render: SvgRender::default(),
             should_reset_view: false,
-            filename: None,
+            filename: PathBuf::new(),
             svg_is_valid: true,
         }
+    }
+}
+
+impl DocumentTrait for Document {
+    fn path(&self) -> &Path {
+        &self.filename
     }
 }

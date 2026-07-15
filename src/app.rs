@@ -3,12 +3,12 @@
 use bladvak::eframe::egui::{self};
 use bladvak::utils::grid::Grid;
 use bladvak::utils::is_native;
-use bladvak::{AppError, BladvakApp, ErrorManager, File, eframe};
+use bladvak::{AppError, BladvakApp, ErrorManager, File, eframe, utils::Documents};
 use resvg::usvg;
 use std::fmt::Debug;
 use std::path::PathBuf;
 
-use crate::document::{Document, Documents};
+use crate::document::Document;
 use crate::settings::AppSettings;
 use crate::string_viewer::StringViewerPanel;
 use crate::svg_render::SvgViewerPanel;
@@ -20,7 +20,7 @@ use crate::{string_viewer::StringViewer, tree_viewer::TreeViewer};
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct GalagoApp {
     /// documents
-    pub(crate) documents: Documents,
+    pub(crate) documents: Documents<Document>,
     /// settings
     pub(crate) settings: AppSettings,
     /// `TreeViewer` Ui
@@ -153,7 +153,7 @@ impl BladvakApp<'_> for GalagoApp {
             });
         if most_likely_font {
             self.usvg_options.fontdb_mut().load_font_data(file.data);
-            for one_document in self.documents.iter_mut() {
+            for one_document in &mut self.documents {
                 one_document.svg_render.stale_render();
             }
             Ok(())

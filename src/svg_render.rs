@@ -123,7 +123,7 @@ impl GalagoApp {
             .checkbox(&mut self.settings.auto_scale, "Auto Scale SVG")
             .changed()
         {
-            for one_doc in self.documents.iter_mut() {
+            for one_doc in &mut self.documents {
                 one_doc.svg_render.auto_scale = self.settings.auto_scale;
                 one_doc.svg_render.stale_render();
             }
@@ -135,7 +135,7 @@ impl GalagoApp {
             )
             .changed()
         {
-            for one_doc in self.documents.iter_mut() {
+            for one_doc in &mut self.documents {
                 one_doc.svg_render.auto_scale = self.settings.auto_scale;
                 one_doc.svg_render.scaler = self.settings.global_scaler;
                 one_doc.svg_render.stale_render();

@@ -106,7 +106,8 @@ impl BladvakApp<'_> for GalagoApp {
         let mut app = saved_state;
         if is_native() && args.len() > 1 {
             use std::fs;
-            app.documents.clear();
+            // do not clear the documents since we save them
+            // app.documents.clear();
             for one_path in &args[1..] {
                 let absolute_path = fs::canonicalize(one_path)?;
                 match fs::read_to_string(&absolute_path) {

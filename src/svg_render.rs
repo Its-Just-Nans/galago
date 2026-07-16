@@ -257,6 +257,7 @@ impl BladvakPanel for SvgViewerPanel {
             ui.label(format!("{} settings", app.grid.title()));
             ui.button("⟳").clicked().then(|| {
                 app.grid = Grid::default();
+                ui.checkbox(&mut app.grid.is_enabled, "");
             });
         });
         app.grid.show_settings(ui);

@@ -120,6 +120,8 @@ impl GalagoApp {
                 if ui.button("Copy svg").clicked() {
                     ui.ctx().copy_text(document.svg.clone());
                 }
+                document.should_reset_view = ui.button("Reset view").clicked();
+
                 if ui.button("Simplify").clicked() {
                     match resvg::usvg::Tree::from_str(&document.svg, &self.usvg_options) {
                         Ok(tree) => document.svg = tree.to_string(&WriteOptions::default()),

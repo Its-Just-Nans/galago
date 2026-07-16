@@ -13,6 +13,17 @@ impl GalagoApp {
         ui: &mut egui::Ui,
         _error_manager: &mut bladvak::ErrorManager,
     ) {
+        if self.documents.get_current_doc_mut().is_none() {
+            egui::Area::new("center".into())
+                .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .show(ui.ctx(), |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading(concat!("Welcome to ", env!("CARGO_PKG_NAME")));
+                        ui.label("No document opened");
+                    });
+                });
+            return;
+        }
         let svg_is_valid = match self.update_svg(ui.ctx()) {
             Ok(()) => true,
             Err(e) => {

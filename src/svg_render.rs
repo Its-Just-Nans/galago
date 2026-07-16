@@ -1,5 +1,5 @@
 //! Svg Render
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use bladvak::{
     AppError, ErrorManager,
@@ -262,11 +262,8 @@ impl BladvakPanel for SvgViewerPanel {
         app.grid.show_settings(ui);
 
         ui.separator();
-        if let Some(document) = app.documents.get_current_doc_mut()
-            && ui.button("Default svg").clicked()
-        {
-            document.saved_svg = GalagoApp::BASE_SVG.to_string();
-            document.svg = GalagoApp::BASE_SVG.to_string();
+        if ui.button("Default svg").clicked() {
+            app.handle_file_string(PathBuf::from("galago.svg"), GalagoApp::BASE_SVG.to_string());
         }
     }
 

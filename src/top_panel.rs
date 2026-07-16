@@ -12,22 +12,7 @@ impl GalagoApp {
         _error_manager: &mut bladvak::ErrorManager,
     ) {
         ui.separator();
-        let Some(document) = self.documents.get_current_doc_mut() else {
-            return;
-        };
-        document.should_reset_view = ui.button("Double click to Reset view").clicked();
-        ui.separator();
-        if ui.button("Copy").clicked() {
-            ui.ctx().copy_text(document.svg.clone());
-        }
-
-        // TODO loop documents
-        let filename = match document.filename.file_name() {
-            Some(file_n) => file_n,
-            None => document.filename.as_os_str(),
-        };
-        ui.separator();
-        ui.label(format!("File: {}", filename.display()));
+        self.documents.show_file_list(ui);
     }
 
     /// Save the current svg

@@ -41,16 +41,8 @@ impl Default for GalagoApp {
         // see https://github.com/RazrFalcon/fontdb/issues/83
         // or maybe do https://github.com/RazrFalcon/fontdb/issues/83#issuecomment-3677330841
         usvg_options.fontdb_mut().load_system_fonts();
-        let document = Document {
-            svg: Self::BASE_SVG.to_string(),
-            saved_svg: Self::BASE_SVG.to_string(),
-            scene_rect: egui::Rect::NAN,
-            svg_is_valid: true,
-            filename: PathBuf::from("galago.svg"),
-            ..Default::default()
-        };
         let mut documents = Documents::default();
-        documents.push(document);
+        documents.push(Self::default_document());
         Self {
             documents,
             settings: AppSettings::default(),
@@ -71,6 +63,29 @@ impl Debug for GalagoApp {
 impl GalagoApp {
     /// Base default svg (galago logo)
     pub(crate) const BASE_SVG: &str = include_str!("../assets/galago.svg");
+
+    /// Default document
+    pub(crate) fn default_document() -> Document {
+        Document {
+            svg: Self::BASE_SVG.to_string(),
+            saved_svg: Self::BASE_SVG.to_string(),
+            scene_rect: egui::Rect::NAN,
+            svg_is_valid: true,
+            filename: PathBuf::from("galago.svg"),
+            ..Default::default()
+        }
+    }
+
+    /// Handle file a string
+    pub(crate) fn handle_file_string(&mut self, filename: PathBuf, svg_str: String) {
+        let document = Document {
+            svg: svg_str.clone(),
+            saved_svg: svg_str,
+            filename,
+            ..Default::default()
+        };
+        self.documents.push(document);
+    }
 }
 
 impl BladvakApp<'_> for GalagoApp {
@@ -88,32 +103,38 @@ impl BladvakApp<'_> for GalagoApp {
         args: &[String],
         _error_manager: &mut ErrorManager,
     ) -> Result<Self, AppError> {
+        let mut app = saved_state;
         if is_native() && args.len() > 1 {
             use std::fs;
-            // TODO handle more args with documents
-            let path = &args[1];
-            let absolute_path = fs::canonicalize(path)?;
-            match fs::read_to_string(&absolute_path) {
-                Ok(svg) => {
-                    let mut app = saved_state;
-                    if let Some(document) = app.documents.get_current_doc_mut() {
-                        document.saved_svg.clone_from(&svg);
-                        document.svg = svg;
-                        document.filename = absolute_path;
+            app.documents.clear();
+            for one_path in &args[1..] {
+                let absolute_path = fs::canonicalize(one_path)?;
+                match fs::read_to_string(&absolute_path) {
+                    Ok(svg) => {
+                        let document = Document {
+                            saved_svg: svg.clone(),
+                            svg,
+                            filename: absolute_path,
+                            ..Default::default()
+                        };
+                        app.documents.push(document);
                     }
-                    Ok(app)
-                }
-                Err(e) => {
-                    eprintln!("Failed to load svg '{}': {e}", absolute_path.display());
-                    Err((
-                        format!("Failed to load svg '{}')", absolute_path.display()),
-                        e,
-                    )
-                        .into())
+                    Err(e) => {
+                        eprintln!("Failed to load svg '{}': {e}", absolute_path.display());
+                        return Err((
+                            format!("Failed to load svg '{}')", absolute_path.display()),
+                            e,
+                        )
+                            .into());
+                    }
                 }
             }
+            Ok(app)
         } else {
-            Ok(saved_state)
+            if !app.documents.is_some() {
+                app.documents.push(Self::default_document());
+            }
+            Ok(app)
         }
     }
 
@@ -159,22 +180,19 @@ impl BladvakApp<'_> for GalagoApp {
             }
             Ok(())
         } else {
-            let Some(document) = self.documents.get_current_doc_mut() else {
-                return Err("No document".into());
-            };
             match String::from_utf8(file.data) {
                 Ok(svg_str) => {
-                    document.saved_svg.clone_from(&svg_str);
-                    document.svg = svg_str;
+                    self.handle_file_string(file.path, svg_str);
                     Ok(())
                 }
                 Err(e) => Err(e.into()),
             }
         }
     }
+
     /// Check if the sidebar is needed
     fn is_side_panel(&self) -> bool {
-        true
+        self.documents.is_some()
     }
 
     fn side_panel(&mut self, ui: &mut egui::Ui, func_ui: impl FnOnce(&mut egui::Ui, &mut Self)) {
@@ -186,7 +204,7 @@ impl BladvakApp<'_> for GalagoApp {
     }
 
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
-        if ui.button("Save").clicked() {
+        if self.documents.is_some() && ui.button("Save").clicked() {
             ui.close();
             let Some(document) = self.documents.get_current_doc_mut() else {
                 error_manager.add_error("No document to save");

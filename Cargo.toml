@@ -1,6 +1,6 @@
 [package]
 name = "galago"
-version = "1.5.3"
+version = "1.5.4"
 authors = ["n4n5 <its.just.n4n5@gmail.com>"]
 edition = "2024"
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml", "assets/*"]

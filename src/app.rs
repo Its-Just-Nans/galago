@@ -199,6 +199,9 @@ impl BladvakApp<'_> for GalagoApp {
     fn side_panel(&mut self, ui: &mut egui::Ui, func_ui: impl FnOnce(&mut egui::Ui, &mut Self)) {
         func_ui(ui, self);
     }
+    fn window_panel_frame(&mut self, ui: &mut egui::Ui) -> egui::Frame {
+        egui::Frame::window(&ui.ctx().global_style()).inner_margin(0.0)
+    }
 
     fn is_open_button(&self) -> bool {
         true

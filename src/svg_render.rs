@@ -220,7 +220,7 @@ impl GalagoApp {
             let texture_loaded = ctx.load_texture(
                 "svg",
                 ImageData::Color(Arc::new(image)),
-                TextureOptions::default(),
+                TextureOptions::NEAREST,
             );
             document.svg_render.texture_save = Some(texture_loaded);
             document.svg_render.cached_svg = Some(document.svg.clone());

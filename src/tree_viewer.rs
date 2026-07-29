@@ -113,19 +113,21 @@ impl TreeViewer {
                                     self.is_editable,
                                 );
                                 ui.add_enabled_ui(self.is_editable, |ui| {
-                                    ui.horizontal(|ui| {
-                                        ui.text_edit_singleline(&mut self.new_element_name);
-                                        if ui
-                                            .button("Add key")
-                                            .on_hover_text("Add new attribute")
-                                            .clicked()
-                                            && !self.new_element_name.is_empty()
-                                        {
-                                            e.children.push(xmltree::XMLNode::Element(
-                                                Element::new(&self.new_element_name),
-                                            ));
-                                            self.new_element_name = String::default();
-                                        }
+                                    ui.columns(2, |col| {
+                                        col[0].text_edit_singleline(&mut self.new_element_name);
+                                        col[1].horizontal(|ui| {
+                                            if ui
+                                                .button("Add key")
+                                                .on_hover_text("Add new attribute")
+                                                .clicked()
+                                                && !self.new_element_name.is_empty()
+                                            {
+                                                e.children.push(xmltree::XMLNode::Element(
+                                                    Element::new(&self.new_element_name),
+                                                ));
+                                                self.new_element_name = String::default();
+                                            }
+                                        });
                                     });
                                 });
 

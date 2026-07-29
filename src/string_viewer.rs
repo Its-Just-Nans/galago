@@ -116,7 +116,7 @@ impl GalagoApp {
                         );
                     }
                 });
-            ui.horizontal(|ui| {
+            let buttons = |ui: &mut egui::Ui| {
                 if ui.button("Copy svg").clicked() {
                     ui.ctx().copy_text(document.svg.clone());
                 }
@@ -133,7 +133,13 @@ impl GalagoApp {
                         }
                     }
                 }
-            });
+            };
+            // smartphone
+            if ui.available_width() > 205.0 {
+                ui.horizontal(buttons);
+            } else {
+                ui.vertical(buttons);
+            }
         });
     }
 }

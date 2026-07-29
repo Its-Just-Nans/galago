@@ -97,6 +97,10 @@ impl BladvakApp<'_> for GalagoApp {
         ]
     }
 
+    fn min_width_sidebar(&self) -> f32 {
+        0.0
+    }
+
     fn try_new_with_args(
         saved_state: Self,
         _cc: &eframe::CreationContext<'_>,

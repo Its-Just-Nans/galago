@@ -201,6 +201,7 @@ impl BladvakApp<'_> for GalagoApp {
     }
     fn window_panel_frame(&mut self, ui: &mut egui::Ui) -> egui::Frame {
         egui::Frame::window(&ui.ctx().global_style()).inner_margin(0.0)
+        // change to title https://github.com/emilk/egui/pull/8353
     }
 
     fn is_open_button(&self) -> bool {

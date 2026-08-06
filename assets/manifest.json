@@ -1,6 +1,6 @@
 {
-    "name": "galago PWA",
-    "short_name": "galago-pwa",
+    "name": "galago",
+    "short_name": "galago",
     "icons": [
         {
             "src": "./assets/icon-256.png",

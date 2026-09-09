@@ -125,13 +125,16 @@ impl GalagoApp {
         {
             for one_doc in &mut self.documents {
                 one_doc.svg_render.auto_scale = self.settings.auto_scale;
+                if !self.settings.auto_scale {
+                    one_doc.svg_render.scaler = self.settings.global_scaler;
+                }
                 one_doc.svg_render.stale_render();
             }
         }
         if ui
             .add_enabled(
                 !self.settings.auto_scale,
-                egui::Slider::new(&mut self.settings.global_scaler, 1..=10).text("SVG Scaler"),
+                egui::Slider::new(&mut self.settings.global_scaler, 1..=20).text("SVG Scaler"),
             )
             .changed()
         {
@@ -188,12 +191,18 @@ impl GalagoApp {
             if document.svg_render.auto_scale {
                 // Calculate the sizer based on the SVG size
                 let size = rtree.size().width().max(rtree.size().height()) as u32;
-                if size < 500 {
-                    document.svg_render.scaler = 6;
+                if size < 10 {
+                    document.svg_render.scaler = 15;
+                } else if size < 100 {
+                    document.svg_render.scaler = 12;
+                } else if size < 250 {
+                    document.svg_render.scaler = 10;
+                } else if size < 500 {
+                    document.svg_render.scaler = 8;
                 } else if size < 1000 {
-                    document.svg_render.scaler = 4;
+                    document.svg_render.scaler = 6;
                 } else if size < 2000 {
-                    document.svg_render.scaler = 2;
+                    document.svg_render.scaler = 4;
                 } else {
                     document.svg_render.scaler = 1;
                 }

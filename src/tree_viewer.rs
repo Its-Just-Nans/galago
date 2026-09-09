@@ -366,13 +366,15 @@ impl TreeViewer {
     #[allow(clippy::too_many_lines)]
     fn show_current_edition(&mut self, ctx: &egui::Context, g: &mut Element) {
         let mut is_open = self.ref_group.is_some();
-        Window::new("Edition")
+        Window::new("Path Edition")
             .scroll(true)
             .open(&mut is_open)
             .min_height(100.0)
             .show(ctx, |ui| {
                 if let Some(path) = g.attributes.get_mut("d") {
-                    ui.text_edit_multiline(path);
+                    ui.collapsing("Raw edition", |ui| {
+                        ui.text_edit_multiline(path);
+                    });
                     let mut parsed_path = match SvgPath::parse(path) {
                         Ok(path) => path,
                         Err(e) => {

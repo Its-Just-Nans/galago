@@ -209,6 +209,14 @@ impl BladvakApp<'_> for GalagoApp {
     }
 
     fn menu_file(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
+        if ui.button("New").clicked() {
+            self.documents.push(Document {
+                svg: String::new(),
+                saved_svg: String::new(),
+                filename: PathBuf::from("new.svg"),
+                ..Default::default()
+            });
+        }
         if self.documents.is_some() && ui.button("Save").clicked() {
             ui.close();
             let Some(document) = self.documents.get_current_doc_mut() else {

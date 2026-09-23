@@ -33,7 +33,7 @@ impl Default for Document {
         Self {
             saved_svg: String::new(),
             svg: String::new(),
-            scene_rect: egui::Rect::NAN,
+            scene_rect: egui::Rect::ZERO,
             svg_render: SvgRender::default(),
             should_reset_view: false,
             filename: PathBuf::new(),

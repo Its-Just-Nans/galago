@@ -69,7 +69,7 @@ impl GalagoApp {
         Document {
             svg: Self::BASE_SVG.to_string(),
             saved_svg: Self::BASE_SVG.to_string(),
-            scene_rect: egui::Rect::NAN,
+            scene_rect: egui::Rect::ZERO,
             svg_is_valid: true,
             filename: PathBuf::from("galago.svg"),
             ..Default::default()

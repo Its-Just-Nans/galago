@@ -1,6 +1,6 @@
 //! Central panel
 use bladvak::{
-    eframe::egui::{self, Pos2, Rect},
+    eframe::egui::{self, Color32, Pos2, Rect, Stroke},
     log,
 };
 
@@ -8,10 +8,11 @@ use crate::GalagoApp;
 
 impl GalagoApp {
     /// Central panel
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn app_central_panel(
         &mut self,
         ui: &mut egui::Ui,
-        _error_manager: &mut bladvak::ErrorManager,
+        error_manager: &mut bladvak::ErrorManager,
     ) {
         if self.documents.get_current_doc_mut().is_none() {
             bladvak::utils::central_ui(ui, |ui| {
@@ -44,6 +45,16 @@ impl GalagoApp {
                     self.grid.draw(&bg_r.rect, painter);
                 }
                 let _response = document.svg_render.show(ui);
+                document.shape_editor.show_in_scene(ui, error_manager);
+
+                if error_manager.is_debug()
+                    && bg_r.dragged()
+                    && let Some(pos) = bg_r.interact_pointer_pos()
+                {
+                    ui.painter()
+                        .circle(pos, 0.0, Color32::BLUE, Stroke::default());
+                }
+
                 // if response.clicked() {
                 //     println!("SVG clicked!");
                 // }

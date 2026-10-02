@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use crate::document::Document;
 use crate::settings::AppSettings;
 use crate::string_viewer::StringViewerPanel;
+use crate::svg_editor::ShapeEditorPanel;
 use crate::svg_render::SvgViewerPanel;
 use crate::tree_viewer::TreeViewerPanel;
 use crate::{string_viewer::StringViewer, tree_viewer::TreeViewer};
@@ -94,6 +95,7 @@ impl BladvakApp<'_> for GalagoApp {
             Box::new(StringViewerPanel),
             Box::new(TreeViewerPanel),
             Box::new(SvgViewerPanel),
+            Box::new(ShapeEditorPanel),
         ]
     }
 

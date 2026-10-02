@@ -26,6 +26,7 @@ mod document;
 pub mod path;
 mod settings;
 mod string_viewer;
+mod svg_editor;
 mod svg_render;
 mod top_panel;
 mod tree_viewer;

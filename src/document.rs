@@ -4,6 +4,7 @@ use bladvak::eframe::egui::{self, Color32};
 use bladvak::utils::document::DocumentTrait;
 use std::path::{Path, PathBuf};
 
+use crate::svg_editor::ShapeEditor;
 use crate::svg_render::SvgRender;
 
 /// Document
@@ -25,9 +26,10 @@ pub(crate) struct Document {
     pub(crate) filename: PathBuf,
     /// Svg is valid
     pub(crate) svg_is_valid: bool,
-
     /// background color
     pub(crate) background_color: Option<Color32>,
+    /// rect
+    pub(crate) shape_editor: ShapeEditor,
 }
 
 impl Default for Document {
@@ -42,6 +44,7 @@ impl Default for Document {
             filename: PathBuf::new(),
             svg_is_valid: true,
             background_color: None,
+            shape_editor: ShapeEditor::default(),
         }
     }
 }

@@ -1,6 +1,6 @@
 //! Document
 
-use bladvak::eframe::egui::{self, Color32, Rect};
+use bladvak::eframe::egui::{self, Color32};
 use bladvak::utils::document::DocumentTrait;
 use std::path::{Path, PathBuf};
 

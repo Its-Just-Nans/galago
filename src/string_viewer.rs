@@ -1,10 +1,10 @@
 //! String Viewer
 
 use bladvak::app::BladvakPanel;
-use bladvak::eframe::egui::{self, Color32, Frame, Pos2, Rect};
+use bladvak::eframe::egui::{self, Color32, Frame};
 use bladvak::egui_extras::syntax_highlighting::CodeTheme;
 use bladvak::{AppError, ErrorManager, egui_extras};
-use resvg::usvg::{Group, Node, WriteOptions};
+use resvg::usvg::WriteOptions;
 use std::sync::Arc;
 
 use crate::GalagoApp;

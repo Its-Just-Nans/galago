@@ -7,6 +7,8 @@ pub(crate) struct AppSettings {
     pub(crate) auto_scale: bool,
     /// global scaler value
     pub(crate) global_scaler: u32,
+    /// Should write the XML document declaration
+    pub(crate) write_document_declaration: bool,
 }
 
 impl Default for AppSettings {
@@ -14,6 +16,7 @@ impl Default for AppSettings {
         Self {
             auto_scale: true,
             global_scaler: 1,
+            write_document_declaration: false,
         }
     }
 }

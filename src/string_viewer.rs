@@ -1,10 +1,10 @@
 //! String Viewer
 
 use bladvak::app::BladvakPanel;
-use bladvak::eframe::egui::{self, Color32, Frame};
+use bladvak::eframe::egui::{self, Color32, Frame, Pos2, Rect};
 use bladvak::egui_extras::syntax_highlighting::CodeTheme;
 use bladvak::{AppError, ErrorManager, egui_extras};
-use resvg::usvg::WriteOptions;
+use resvg::usvg::{Group, Node, WriteOptions};
 use std::sync::Arc;
 
 use crate::GalagoApp;
@@ -140,6 +140,27 @@ impl GalagoApp {
             } else {
                 ui.vertical(buttons);
             }
+            ui.horizontal(|ui| {
+                let mut current = document.background_color.is_some();
+                if ui.checkbox(&mut current, "Background").changed() {
+                    document.svg_render.stale_render();
+                    if current {
+                        document.background_color = Some(Color32::WHITE);
+                    } else {
+                        document.background_color = None;
+                    }
+                }
+                if let Some(color) = &mut document.background_color
+                    && egui::color_picker::color_edit_button_srgba(
+                        ui,
+                        color,
+                        egui::color_picker::Alpha::OnlyBlend,
+                    )
+                    .changed()
+                {
+                    document.svg_render.stale_render();
+                }
+            });
         });
     }
 }

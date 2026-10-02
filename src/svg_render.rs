@@ -17,7 +17,7 @@ use resvg::tiny_skia::Pixmap;
 use crate::GalagoApp;
 
 /// Svg Render Struct
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(serde::Deserialize, serde::Serialize, Clone)]
 pub struct SvgRender {
     /// Texture Handle
     #[serde(skip)]
@@ -216,7 +216,12 @@ impl GalagoApp {
                     "Failed to create SVG Pixmap of size {w}x{h}"
                 )))
             })?;
+            if let Some(color) = document.background_color {
+                let color =
+                    resvg::tiny_skia::Color::from_rgba8(color.r(), color.g(), color.b(), color.a());
 
+                pixmap.fill(color);
+            }
             let transform = resvg::tiny_skia::Transform {
                 sx: document.svg_render.scaler as f32,
                 sy: document.svg_render.scaler as f32,

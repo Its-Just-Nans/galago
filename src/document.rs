@@ -1,13 +1,13 @@
 //! Document
 
-use bladvak::eframe::egui;
+use bladvak::eframe::egui::{self, Color32, Rect};
 use bladvak::utils::document::DocumentTrait;
 use std::path::{Path, PathBuf};
 
 use crate::svg_render::SvgRender;
 
 /// Document
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 #[serde(default)]
 pub(crate) struct Document {
     /// Save of the SVG
@@ -25,6 +25,9 @@ pub(crate) struct Document {
     pub(crate) filename: PathBuf,
     /// Svg is valid
     pub(crate) svg_is_valid: bool,
+
+    /// background color
+    pub(crate) background_color: Option<Color32>,
 }
 
 impl Default for Document {
@@ -38,6 +41,7 @@ impl Default for Document {
             should_reset_view: false,
             filename: PathBuf::new(),
             svg_is_valid: true,
+            background_color: None,
         }
     }
 }
@@ -45,5 +49,11 @@ impl Default for Document {
 impl DocumentTrait for Document {
     fn path(&self) -> &Path {
         &self.filename
+    }
+    fn set_path(&mut self, new_path: PathBuf) {
+        self.filename = new_path;
+    }
+    fn deep_clone(&self) -> Self {
+        self.clone()
     }
 }

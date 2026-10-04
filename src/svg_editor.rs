@@ -49,7 +49,7 @@ impl ShapeEditor {
                     recursive_add(&mut self.shapes, tree.root());
                 }
                 Err(_e) => {
-                    error_manager.add_error("Cannot conver the svg");
+                    error_manager.add_error("Cannot convert the svg");
                 }
             }
         }

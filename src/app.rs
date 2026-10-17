@@ -9,9 +9,9 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 
 use crate::document::Document;
+use crate::editor::ShapeEditorPanel;
 use crate::settings::AppSettings;
 use crate::string_viewer::StringViewerPanel;
-use crate::svg_editor::ShapeEditorPanel;
 use crate::svg_render::SvgViewerPanel;
 use crate::tree_viewer::TreeViewerPanel;
 use crate::{string_viewer::StringViewer, tree_viewer::TreeViewer};

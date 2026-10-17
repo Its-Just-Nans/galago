@@ -120,13 +120,13 @@ impl Display for SvgItem {
 }
 
 /// Represents an SVG path, which is a collection of SVG path items.
-#[derive(Debug, Clone)]
-pub struct SvgPath {
+#[derive(Debug, Clone, Default)]
+pub struct InnerSvgPath {
     /// A vector of SVG path items.
     pub items: Vec<SvgItem>,
 }
 
-impl SvgPath {
+impl InnerSvgPath {
     /// Parses a string into an SVG path.
     /// # Errors
     /// Returns an error if the string cannot be parsed into a valid SVG path.
@@ -141,7 +141,7 @@ impl SvgPath {
             items.push(to_add);
         }
 
-        Ok(SvgPath { items })
+        Ok(Self { items })
     }
 
     /// Converts the path to absolute coordinates.
@@ -838,7 +838,7 @@ impl SvgPath {
                 };
                 result.push_str(segment_str);
             }
-            match SvgPath::parse(&result) {
+            match Self::parse(&result) {
                 Ok(path) => {
                     return Ok(path.to_string());
                 }
@@ -854,7 +854,7 @@ impl SvgPath {
     /// Reverse the path
     #[allow(clippy::too_many_lines)]
     #[must_use]
-    pub fn reversed(&self) -> SvgPath {
+    pub fn reversed(&self) -> Self {
         let mut path = self.clone();
         path.absolute();
 
@@ -899,7 +899,7 @@ impl SvgPath {
             out.extend(rev);
         }
 
-        SvgPath { items: out }
+        Self { items: out }
     }
 
     /// Reverse the contours
@@ -1088,7 +1088,7 @@ impl SvgPath {
     }
 }
 
-impl Display for SvgPath {
+impl Display for InnerSvgPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
         for item in &self.items {
@@ -1191,7 +1191,7 @@ mod tests {
 
     #[test]
     fn test_path_parsed() {
-        let mut parsed = SvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104ZM110 150C104 153 98 160 95 166S92 184 95 190C103 208 126 216 142 205 149 200 153 195 155 188 161 172 150 153 133 147 128 145 115 147 110 150ZM174 270C236 271 265 237 269 207 271 189 270 172 273 172 303 154 315 142 328 109 353 49 304 62 294 66 278 72 270 83 259 94 246 104 189 104 174 104ZM239 150C245 153 251 160 254 166S257 184 254 190C246 208 223 216 207 205 200 200 196 195 194 188 188 172 199 153 216 147 221 145 234 147 239 150Z").unwrap();
+        let mut parsed = InnerSvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104ZM110 150C104 153 98 160 95 166S92 184 95 190C103 208 126 216 142 205 149 200 153 195 155 188 161 172 150 153 133 147 128 145 115 147 110 150ZM174 270C236 271 265 237 269 207 271 189 270 172 273 172 303 154 315 142 328 109 353 49 304 62 294 66 278 72 270 83 259 94 246 104 189 104 174 104ZM239 150C245 153 251 160 254 166S257 184 254 190C246 208 223 216 207 205 200 200 196 195 194 188 188 172 199 153 216 147 221 145 234 147 239 150Z").unwrap();
         assert_eq!(
             parsed.to_string(),
             "M174 270C113 271 84 237 80 207C78 189 79 172 76 172C46 154 34 142 21 109C-4 49 45 62 55 66C71 72 79 83 90 94C103 104 160 104 174 104ZM110 150C104 153 98 160 95 166S92 184 95 190C103 208 126 216 142 205C149 200 153 195 155 188C161 172 150 153 133 147C128 145 115 147 110 150ZM174 270C236 271 265 237 269 207C271 189 270 172 273 172C303 154 315 142 328 109C353 49 304 62 294 66C278 72 270 83 259 94C246 104 189 104 174 104ZM239 150C245 153 251 160 254 166S257 184 254 190C246 208 223 216 207 205C200 200 196 195 194 188C188 172 199 153 216 147C221 145 234 147 239 150Z"
@@ -1208,7 +1208,7 @@ mod tests {
             "m174 270c-61 1 -90 -33 -94 -63c-2 -18 -1 -35 -4 -35c-30 -18 -42 -30 -55 -63c-25 -60 24 -47 34 -43c16 6 24 17 35 28c13 10 70 10 84 10zm-64 -120c-6 3 -12 10 -15 16s-3 18 0 24c8 18 31 26 47 15c7 -5 11 -10 13 -17c6 -16 -5 -35 -22 -41c-5 -2 -18 0 -23 3zm64 120c62 1 91 -33 95 -63c2 -18 1 -35 4 -35c30 -18 42 -30 55 -63c25 -60 -24 -47 -34 -43c-16 6 -24 17 -35 28c-13 10 -70 10 -85 10zm65 -120c6 3 12 10 15 16s3 18 0 24c-8 18 -31 26 -47 15c-7 -5 -11 -10 -13 -17c-6 -16 5 -35 22 -41c5 -2 18 0 23 3z"
         );
 
-        let mut parsed_relative = SvgPath::parse("m174 270c-61 1 -90 -33 -94 -63c-2 -18 -1 -35 -4 -35c-30 -18 -42 -30 -55 -63c-25 -60 24 -47 34 -43c16 6 24 17 35 28c13 10 70 10 84 10zm-64 -120c-6 3 -12 10 -15 16s-3 18 0 24c8 18 31 26 47 15c7 -5 11 -10 13 -17c6 -16 -5 -35 -22 -41c-5 -2 -18 0 -23 3zm64 120c62 1 91 -33 95 -63c2 -18 1 -35 4 -35c30 -18 42 -30 55 -63c25 -60 -24 -47 -34 -43c-16 6 -24 17 -35 28c-13 10 -70 10 -85 10zm65 -120c6 3 12 10 15 16s3 18 0 24c-8 18 -31 26 -47 15c-7 -5 -11 -10 -13 -17c-6 -16 5 -35 22 -41c5 -2 18 0 23 3z").unwrap();
+        let mut parsed_relative = InnerSvgPath::parse("m174 270c-61 1 -90 -33 -94 -63c-2 -18 -1 -35 -4 -35c-30 -18 -42 -30 -55 -63c-25 -60 24 -47 34 -43c16 6 24 17 35 28c13 10 70 10 84 10zm-64 -120c-6 3 -12 10 -15 16s-3 18 0 24c8 18 31 26 47 15c7 -5 11 -10 13 -17c6 -16 -5 -35 -22 -41c-5 -2 -18 0 -23 3zm64 120c62 1 91 -33 95 -63c2 -18 1 -35 4 -35c30 -18 42 -30 55 -63c25 -60 -24 -47 -34 -43c-16 6 -24 17 -35 28c-13 10 -70 10 -85 10zm65 -120c6 3 12 10 15 16s3 18 0 24c-8 18 -31 26 -47 15c-7 -5 -11 -10 -13 -17c-6 -16 5 -35 22 -41c5 -2 18 0 23 3z").unwrap();
 
         assert_eq!(
             parsed_relative.to_string(),
@@ -1223,7 +1223,7 @@ mod tests {
 
     #[test]
     fn test_toggle_coord_type_at() {
-        let mut parsed = SvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104Z").unwrap();
+        let mut parsed = InnerSvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104Z").unwrap();
         let len = parsed.items.len();
         assert_eq!(len, 8);
         for i in 0..len {
@@ -1278,7 +1278,7 @@ mod tests {
 
     #[test]
     fn test_path_reverse() {
-        let parsed = SvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104Z").unwrap();
+        let parsed = InnerSvgPath::parse("M174 270C113 271 84 237 80 207 78 189 79 172 76 172 46 154 34 142 21 109-4 49 45 62 55 66 71 72 79 83 90 94 103 104 160 104 174 104Z").unwrap();
         eprintln!("{parsed}");
         assert_eq!(
             parsed.reversed().to_string(),
@@ -1288,7 +1288,8 @@ mod tests {
 
     #[test]
     fn test_path_reversed_1() {
-        let parsed = SvgPath::parse("M0 50 a100 50 0 1,0 200 0 a100 50 0 1,0 -200 0 Z").unwrap();
+        let parsed =
+            InnerSvgPath::parse("M0 50 a100 50 0 1,0 200 0 a100 50 0 1,0 -200 0 Z").unwrap();
         eprintln!("{parsed}");
         assert_eq!(
             parsed.reversed().to_string(),
@@ -1298,7 +1299,8 @@ mod tests {
 
     #[test]
     fn test_path_reversed_2() {
-        let parsed = SvgPath::parse("M 5 2 L 9 2 L 9 6 Z L 1 7 L 4 9 Z L 6 9 L 8 7 Z").unwrap();
+        let parsed =
+            InnerSvgPath::parse("M 5 2 L 9 2 L 9 6 Z L 1 7 L 4 9 Z L 6 9 L 8 7 Z").unwrap();
         eprintln!("{parsed}");
         assert_eq!(
             parsed.reversed().to_string(),
@@ -1308,7 +1310,7 @@ mod tests {
 
     #[test]
     fn test_path_reversed_3() {
-        let parsed = SvgPath::parse("M133 185C128 185 126 183 126 179S128 172 133 172 140 175 140 179 137 185 133 185ZM116 202C125 205 134 204 141 197 149 190 152 181 149 171 147 165 141 158 136 155 116 145 94 163 100 184 102 191 109 199 116 202Z").unwrap();
+        let parsed = InnerSvgPath::parse("M133 185C128 185 126 183 126 179S128 172 133 172 140 175 140 179 137 185 133 185ZM116 202C125 205 134 204 141 197 149 190 152 181 149 171 147 165 141 158 136 155 116 145 94 163 100 184 102 191 109 199 116 202Z").unwrap();
         eprintln!("{parsed}");
         assert_eq!(
             parsed.reversed().to_string(),

@@ -10,7 +10,7 @@ use xmltree::{AttributeMap, Element, EmitterConfig};
 
 use crate::GalagoApp;
 use crate::path::{
-    SvgPath, circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
+    InnerSvgPath, circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
     rect_to_path,
 };
 
@@ -368,7 +368,7 @@ impl TreeViewer {
                     ui.collapsing("Raw edition", |ui| {
                         ui.text_edit_multiline(path);
                     });
-                    let mut parsed_path = match SvgPath::parse(path) {
+                    let mut parsed_path = match InnerSvgPath::parse(path) {
                         Ok(path) => path,
                         Err(e) => {
                             ui.colored_label(Color32::RED, format!("Invalid path: {e}"));

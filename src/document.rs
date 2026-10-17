@@ -4,7 +4,7 @@ use bladvak::eframe::egui::{self, Color32};
 use bladvak::utils::document::DocumentTrait;
 use std::path::{Path, PathBuf};
 
-use crate::svg_editor::ShapeEditor;
+use crate::editor::ShapeEditor;
 use crate::svg_render::SvgRender;
 
 /// Document

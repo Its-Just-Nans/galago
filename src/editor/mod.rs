@@ -1,12 +1,13 @@
 //! SVG editor
 
 mod path;
+mod polygon;
 mod rect;
 
 use bladvak::{ErrorManager, app::BladvakPanel, eframe::egui};
 use resvg::usvg::Options;
 
-use crate::GalagoApp;
+use crate::{GalagoApp, editor::polygon::SvgPolygon};
 use path::SvgPath;
 use rect::SvgRect;
 
@@ -33,11 +34,12 @@ enum InnerShape {
     Rect(SvgRect),
     /// path
     Path(SvgPath),
+    /// polygon
+    Polygon(SvgPolygon),
 }
 
 impl InnerShape {
     /// show the shape
-    #[allow(clippy::too_many_lines)]
     fn show_shape(&mut self, ui: &mut egui::Ui, idx: usize, error_manager: &mut ErrorManager) {
         let size_point = 5.0;
         match self {
@@ -47,6 +49,17 @@ impl InnerShape {
             Self::Path(shape) => {
                 shape.show(ui, idx, size_point, error_manager);
             }
+            Self::Polygon(shape) => {
+                shape.show(ui, idx, size_point, error_manager);
+            }
+        }
+    }
+    /// name
+    fn name(&self) -> &str {
+        match self {
+            Self::Rect(_) => "rect",
+            Self::Path(_) => "path",
+            Self::Polygon(_) => "polygon",
         }
     }
 }
@@ -59,17 +72,18 @@ fn recursive_add(
 ) {
     for one_node in group.children() {
         match one_node.tag_name().name() {
-            "p" => {
-                // TODO
-                // let rect = p.abs_bounding_box();
-                // let min = Pos2::new(rect.left(), rect.top());
-                // let max = Pos2::new(rect.right(), rect.bottom());
-                // let shape = Shape {
-                //     inner: InnerShape::Rect(Rect::from_min_max(min, max)),
-                //     is_visible: true,
-                // };
-                // rects.push(shape);
-            }
+            "path" => match SvgPath::try_parse(one_node) {
+                Ok(s) => {
+                    let shape = Shape {
+                        inner: InnerShape::Path(s),
+                        is_visible: true,
+                    };
+                    rects.push(shape);
+                }
+                Err(err) => {
+                    error_manager.add_error(err);
+                }
+            },
             "rect" => match SvgRect::try_parse(one_node) {
                 Ok(s) => {
                     let shape = Shape {
@@ -80,15 +94,20 @@ fn recursive_add(
                 }
                 Err(err) => {
                     error_manager.add_error(err);
-                    continue;
                 }
             },
-            "polygon" => {
-                // TODO
-                // let rect = p.abs_bounding_box();
-                // let min = Pos2::new(rect.left(), rect.top());
-                // let max = Pos2::new(rect.right(), rect.bottom());
-            }
+            "polygon" => match SvgPolygon::try_parse(one_node) {
+                Ok(s) => {
+                    let shape = Shape {
+                        inner: InnerShape::Polygon(s),
+                        is_visible: true,
+                    };
+                    rects.push(shape);
+                }
+                Err(err) => {
+                    error_manager.add_error(err);
+                }
+            },
             "g" | "svg" => {
                 recursive_add(rects, &one_node, error_manager);
             }
@@ -121,17 +140,12 @@ impl ShapeEditor {
                 }
             }
         }
-        if ui.button("Add path").clicked() {
-            let shape = Shape {
-                inner: InnerShape::Path(SvgPath::default()),
-                is_visible: true,
-            };
-            self.shapes.push(shape);
-        }
         let mut to_remove = None;
         for (idx, shape) in self.shapes.iter().enumerate() {
             ui.horizontal(|ui| {
-                ui.label(format!("{shape:?}"));
+                ui.collapsing(shape.inner.name(), |ui| {
+                    ui.label(format!("{shape:#?}"));
+                });
                 if ui.button("Delete").clicked() {
                     to_remove = Some(idx);
                 }

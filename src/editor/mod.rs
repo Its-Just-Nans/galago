@@ -7,7 +7,7 @@ mod rect;
 use bladvak::{
     ErrorManager,
     app::BladvakPanel,
-    eframe::egui::{self, CollapsingHeader},
+    eframe::egui::{self, CollapsingHeader, ScrollArea},
 };
 
 use crate::{GalagoApp, editor::polygon::SvgPolygon};
@@ -197,6 +197,9 @@ impl BladvakPanel for ShapeEditorPanel {
         let Some(document) = app.documents.get_current_doc_mut() else {
             return;
         };
-        document.shape_editor.show(ui, &document.svg, error_manager);
+        ScrollArea::vertical().show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            document.shape_editor.show(ui, &document.svg, error_manager);
+        });
     }
 }

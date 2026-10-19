@@ -1610,7 +1610,6 @@ name = "galago"
 version = "1.5.4"
 dependencies = [
  "bladvak",
- "image",
  "kurbo 0.13.1",
  "resvg 0.48.1",
  "serde",

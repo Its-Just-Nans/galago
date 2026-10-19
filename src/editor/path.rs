@@ -2,7 +2,10 @@
 
 use bladvak::{
     ErrorManager,
-    eframe::egui::{self, Color32, Pos2, Rect, Stroke, Vec2},
+    eframe::{
+        egui::{self, Color32, Pos2, Rect, Shape, Stroke, Vec2},
+        epaint::{PathStroke, QuadraticBezierShape},
+    },
 };
 use resvg::usvg::roxmltree::Node;
 use svgtypes::PathSegment;
@@ -48,6 +51,7 @@ impl SvgPath {
         Ok(Self { d, bounding_box })
     }
     /// show the path
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn show(
         &mut self,
         ui: &mut egui::Ui,
@@ -139,6 +143,166 @@ impl SvgPath {
                             new_bb = new_bb.union(Rect::from_pos(new_pos));
                         }
                     }
+                }
+                PathSegment::HorizontalLineTo { abs, x } => {
+                    let start = p;
+                    let x = *x as f32;
+                    let (end_x, end_y) = if *abs { (x, p.y) } else { (p.x + x, p.y) };
+                    let end = Pos2::new(end_x, end_y);
+                    p = end;
+                    ui.painter()
+                        .line_segment([start, end], Stroke::new(1.0, Color32::BLACK));
+                    let rect_end = Rect::from_center_size(p, Vec2::splat(size_point));
+                    let zone = rect_end.expand(detection_zone);
+                    if is_debug {
+                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                    }
+                    ui.painter().rect(
+                        rect_end,
+                        0.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                        egui::StrokeKind::Middle,
+                    );
+                    if resp.dragged()
+                        && let Some(pos) = resp.interact_pointer_pos()
+                        && zone.contains(pos)
+                    {
+                        let new_pos = p + resp.drag_delta();
+                        one_point.inner = PathSegment::HorizontalLineTo {
+                            abs: true,
+                            x: f64::from(new_pos.x),
+                        };
+                        moved = true;
+                        if !new_bb.contains(new_pos) {
+                            new_bb = new_bb.union(Rect::from_pos(new_pos));
+                        }
+                    }
+                }
+                PathSegment::VerticalLineTo { abs, y } => {
+                    let start = p;
+                    let y = *y as f32;
+                    let (end_x, end_y) = if *abs { (p.x, y) } else { (p.x, p.y + y) };
+                    let end = Pos2::new(end_x, end_y);
+                    p = end;
+                    ui.painter()
+                        .line_segment([start, end], Stroke::new(1.0, Color32::BLACK));
+                    let rect_end = Rect::from_center_size(p, Vec2::splat(size_point));
+                    let zone = rect_end.expand(detection_zone);
+                    if is_debug {
+                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                    }
+                    ui.painter().rect(
+                        rect_end,
+                        0.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                        egui::StrokeKind::Middle,
+                    );
+                    if resp.dragged()
+                        && let Some(pos) = resp.interact_pointer_pos()
+                        && zone.contains(pos)
+                    {
+                        let new_pos = p + resp.drag_delta();
+                        one_point.inner = PathSegment::VerticalLineTo {
+                            abs: true,
+                            y: f64::from(new_pos.y),
+                        };
+                        moved = true;
+                        if !new_bb.contains(new_pos) {
+                            new_bb = new_bb.union(Rect::from_pos(new_pos));
+                        }
+                    }
+                }
+                PathSegment::Quadratic { abs, x1, y1, x, y } => {
+                    let start = p;
+                    let (x1, y1) = (*x1 as f32, *y1 as f32);
+                    let middle = if *abs {
+                        Pos2::new(x1, y1)
+                    } else {
+                        Pos2::new(p.x + x1, p.y + y1)
+                    };
+                    let (x, y) = (*x as f32, *y as f32);
+                    let end = if *abs {
+                        Pos2::new(x, y)
+                    } else {
+                        Pos2::new(p.x + x, p.y + y)
+                    };
+                    p = end;
+                    ui.painter()
+                        .add(Shape::QuadraticBezier(QuadraticBezierShape {
+                            points: [start, middle, end],
+                            closed: false,
+                            fill: Color32::TRANSPARENT,
+                            stroke: PathStroke::new(1.0, Color32::BLACK),
+                        }));
+                    let rect_middle = Rect::from_center_size(middle, Vec2::splat(size_point));
+                    let zone = rect_middle.expand(detection_zone);
+                    if is_debug {
+                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                    }
+                    ui.painter().rect(
+                        rect_middle,
+                        0.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                        egui::StrokeKind::Middle,
+                    );
+                    ui.painter()
+                        .line_segment([start, middle], Stroke::new(1.0, Color32::RED));
+
+                    if resp.dragged()
+                        && let Some(pos) = resp.interact_pointer_pos()
+                        && zone.contains(pos)
+                    {
+                        let new_pos = middle + resp.drag_delta();
+                        one_point.inner = PathSegment::Quadratic {
+                            abs: true,
+                            x1: f64::from(new_pos.x),
+                            y1: f64::from(new_pos.y),
+                            x: f64::from(x),
+                            y: f64::from(y),
+                        };
+                        moved = true;
+                        if !new_bb.contains(new_pos) {
+                            new_bb = new_bb.union(Rect::from_pos(new_pos));
+                        }
+                    }
+
+                    let rect_end = Rect::from_center_size(end, Vec2::splat(size_point));
+                    let zone = rect_end.expand(detection_zone);
+                    if is_debug {
+                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                    }
+                    ui.painter().rect(
+                        rect_end,
+                        0.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                        egui::StrokeKind::Middle,
+                    );
+                    ui.painter()
+                        .line_segment([middle, end], Stroke::new(1.0, Color32::RED));
+                    if resp.dragged()
+                        && let Some(pos) = resp.interact_pointer_pos()
+                        && zone.contains(pos)
+                    {
+                        let new_pos = end + resp.drag_delta();
+                        one_point.inner = PathSegment::Quadratic {
+                            abs: true,
+                            x1: f64::from(x1),
+                            y1: f64::from(y1),
+                            x: f64::from(new_pos.x),
+                            y: f64::from(new_pos.y),
+                        };
+                        moved = true;
+                        if !new_bb.contains(new_pos) {
+                            new_bb = new_bb.union(Rect::from_pos(new_pos));
+                        }
+                    }
+                }
+                PathSegment::ClosePath { abs } => {
+                    // TODO join to the first point
                 }
                 _ => {}
             }

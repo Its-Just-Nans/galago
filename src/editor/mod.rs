@@ -4,7 +4,11 @@ mod path;
 mod polygon;
 mod rect;
 
-use bladvak::{ErrorManager, app::BladvakPanel, eframe::egui};
+use bladvak::{
+    ErrorManager,
+    app::BladvakPanel,
+    eframe::egui::{self, CollapsingHeader},
+};
 use resvg::usvg::Options;
 
 use crate::{GalagoApp, editor::polygon::SvgPolygon};
@@ -143,9 +147,11 @@ impl ShapeEditor {
         let mut to_remove = None;
         for (idx, shape) in self.shapes.iter().enumerate() {
             ui.horizontal(|ui| {
-                ui.collapsing(shape.inner.name(), |ui| {
-                    ui.label(format!("{shape:#?}"));
-                });
+                CollapsingHeader::new(shape.inner.name())
+                    .id_salt(("collapsing", shape.inner.name(), idx))
+                    .show(ui, |ui| {
+                        ui.label(format!("{shape:#?}"));
+                    });
                 if ui.button("Delete").clicked() {
                     to_remove = Some(idx);
                 }

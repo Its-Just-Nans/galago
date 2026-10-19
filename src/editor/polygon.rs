@@ -50,7 +50,9 @@ impl SvgPolygon {
             .split_whitespace()
             .map(|s| s.parse::<f32>().map_err(|_| "Invalid coordinate"))
             .collect::<Result<Vec<_>, _>>()?
-            .as_chunks::<2>().0.iter()
+            .as_chunks::<2>()
+            .0
+            .iter()
             .map(|c| Pos2::new(c[0], c[1]))
             .collect::<Vec<Pos2>>();
         let bounding_box = bounding_box(&points).ok_or("Cannot get bounding box")?;

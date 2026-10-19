@@ -33,89 +33,72 @@ impl SvgItem {
     }
 }
 
-impl Display for SvgItem {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let fmt = match self.inner {
-            PathSegment::MoveTo { abs: _, x, y } | PathSegment::LineTo { abs: _, x, y } => {
-                // move to
-                format!("{}{} {}", self.get_letter(), x, y)
-            }
-            PathSegment::HorizontalLineTo { abs: _, x } => {
-                format!("{}{}", self.get_letter(), x)
-            }
-            PathSegment::VerticalLineTo { abs: _, y } => {
-                format!("{}{}", self.get_letter(), y)
-            }
-            PathSegment::CurveTo {
-                abs: _,
-                x1,
-                y1,
-                x2,
-                y2,
-                x,
-                y,
-            } => format!(
-                "{}{} {} {} {} {} {}",
-                self.get_letter(),
-                x1,
-                y1,
-                x2,
-                y2,
-                x,
-                y
-            ),
-            PathSegment::SmoothCurveTo {
-                abs: _,
-                x2,
-                y2,
-                x,
-                y,
-            } => {
-                format!("{}{} {} {} {}", self.get_letter(), x2, y2, x, y)
-            }
-            PathSegment::Quadratic {
-                abs: _,
-                x1,
-                y1,
-                x,
-                y,
-            } => {
-                format!("{}{} {} {} {}", self.get_letter(), x1, y1, x, y)
-            }
-            PathSegment::SmoothQuadratic { abs: _, x, y } => {
-                // smooth quadratic
-                format!("{}{} {}", self.get_letter(), x, y)
-            }
-            PathSegment::EllipticalArc {
-                abs: _,
-                rx,
-                ry,
-                x_axis_rotation,
-                large_arc,
-                sweep,
-                x,
-                y,
-            } => format!(
-                "{}{} {} {} {} {} {} {}",
-                self.get_letter(),
-                rx,
-                ry,
-                x_axis_rotation,
-                if large_arc { "1" } else { "0" },
-                if sweep { "1" } else { "0" },
-                x,
-                y
-            ),
-            PathSegment::ClosePath { abs } => {
-                if abs {
-                    "Z".to_string()
-                } else {
-                    "z".to_string()
-                }
-            }
-        };
-        write!(f, "{fmt}")?;
-        Ok(())
+/// `PathSegment` to string
+pub(crate) fn to_string_path_segment(p: &PathSegment) -> String {
+    let letter = p.command() as char;
+    match p {
+        PathSegment::MoveTo { abs: _, x, y } | PathSegment::LineTo { abs: _, x, y } => {
+            // move to
+            format!("{letter}{x} {y}")
+        }
+        PathSegment::HorizontalLineTo { abs: _, x } => {
+            format!("{letter}{x}")
+        }
+        PathSegment::VerticalLineTo { abs: _, y } => {
+            format!("{letter}{y}")
+        }
+        PathSegment::CurveTo {
+            abs: _,
+            x1,
+            y1,
+            x2,
+            y2,
+            x,
+            y,
+        } => format!("{letter}{x1} {y1} {x2} {y2} {x} {y}"),
+        PathSegment::SmoothCurveTo {
+            abs: _,
+            x2,
+            y2,
+            x,
+            y,
+        } => {
+            format!("{letter}{x2} {y2} {x} {y}")
+        }
+        PathSegment::Quadratic {
+            abs: _,
+            x1,
+            y1,
+            x,
+            y,
+        } => {
+            format!("{letter}{x1} {y1} {x} {y}")
+        }
+        PathSegment::SmoothQuadratic { abs: _, x, y } => {
+            // smooth quadratic
+            format!("{letter}{x} {y}")
+        }
+        PathSegment::EllipticalArc {
+            abs: _,
+            rx,
+            ry,
+            x_axis_rotation,
+            large_arc,
+            sweep,
+            x,
+            y,
+        } => format!(
+            "{}{} {} {} {} {} {} {}",
+            letter,
+            rx,
+            ry,
+            x_axis_rotation,
+            if *large_arc { "1" } else { "0" },
+            if *sweep { "1" } else { "0" },
+            x,
+            y
+        ),
+        PathSegment::ClosePath { abs: _ } => letter.to_string(),
     }
 }
 
@@ -123,7 +106,7 @@ impl Display for SvgItem {
 #[derive(Debug, Clone, Default)]
 pub struct InnerSvgPath {
     /// A vector of SVG path items.
-    pub items: Vec<SvgItem>,
+    pub items: Vec<PathSegment>,
 }
 
 impl InnerSvgPath {
@@ -137,7 +120,7 @@ impl InnerSvgPath {
         for segment in s {
             let one_segment = segment
                 .map_err(|e| format!("Failed to parse SVG path segment: {e} in {path_str}"))?;
-            let to_add = SvgItem { inner: one_segment };
+            let to_add = one_segment;
             items.push(to_add);
         }
 
@@ -151,7 +134,7 @@ impl InnerSvgPath {
         let mut subpath_start = (0.0, 0.0);
 
         for item in &mut self.items {
-            match &mut item.inner {
+            match item {
                 PathSegment::MoveTo { abs, x, y } => {
                     if !*abs {
                         *x += pos.0;
@@ -272,7 +255,7 @@ impl InnerSvgPath {
         let mut subpath_start = (0.0, 0.0);
 
         for item in &mut self.items {
-            match &mut item.inner {
+            match item {
                 PathSegment::MoveTo { abs, x, y } => {
                     if *abs {
                         let rel = (*x - pos.0, *y - pos.1);
@@ -392,7 +375,7 @@ impl InnerSvgPath {
     /// Translates the path by (dx, dy).
     pub fn translate(&mut self, dx: f64, dy: f64) {
         for item in &mut self.items {
-            match &mut item.inner {
+            match item {
                 PathSegment::MoveTo { x, y, .. }
                 | PathSegment::LineTo { x, y, .. }
                 | PathSegment::SmoothQuadratic { x, y, .. }
@@ -443,7 +426,7 @@ impl InnerSvgPath {
     /// Scales the path by (sx, sy) relative to the origin (0, 0).
     pub fn scale(&mut self, sx: f64, sy: f64) {
         for item in &mut self.items {
-            match &mut item.inner {
+            match item {
                 PathSegment::MoveTo { x, y, .. }
                 | PathSegment::LineTo { x, y, .. }
                 | PathSegment::SmoothQuadratic { x, y, .. } => {
@@ -510,7 +493,7 @@ impl InnerSvgPath {
         };
 
         for item in &mut self.items {
-            match &mut item.inner {
+            match item {
                 PathSegment::MoveTo { x, y, .. }
                 | PathSegment::LineTo { x, y, .. }
                 | PathSegment::SmoothQuadratic { x, y, .. } => {
@@ -560,7 +543,7 @@ impl InnerSvgPath {
     /// Rounds all coordinates and values in the path to the given number of decimal places.
     pub fn round(&mut self, decimal: u64) {
         for item in &mut self.items {
-            match &mut item.inner {
+            match item {
                 PathSegment::MoveTo { x, y, .. }
                 | PathSegment::LineTo { x, y, .. }
                 | PathSegment::SmoothQuadratic { x, y, .. } => {
@@ -630,7 +613,7 @@ impl InnerSvgPath {
         // We need to recalculate the position up to item i
         for (j, item) in self.items.iter_mut().enumerate() {
             if j == index {
-                match &mut item.inner {
+                match item {
                     PathSegment::MoveTo { abs, x, y } => {
                         if *abs {
                             *x -= pos.0;
@@ -768,7 +751,7 @@ impl InnerSvgPath {
                 break;
             }
             // Update the position so we know the current point at index i
-            match &item.inner {
+            match item {
                 PathSegment::MoveTo { abs, x, y } => {
                     if *abs {
                         pos = (*x, *y);
@@ -834,7 +817,7 @@ impl InnerSvgPath {
                 let segment_str = if index == idx {
                     val
                 } else {
-                    &one_item.to_string()
+                    &to_string_path_segment(one_item)
                 };
                 result.push_str(segment_str);
             }
@@ -858,11 +841,11 @@ impl InnerSvgPath {
         let mut path = self.clone();
         path.absolute();
 
-        let mut contours: Vec<Vec<SvgItem>> = Vec::new();
+        let mut contours = Vec::new();
         let mut current = Vec::new();
 
         for item in path.items {
-            match item.inner {
+            match item {
                 PathSegment::MoveTo { .. } => {
                     if !current.is_empty() {
                         contours.push(current);
@@ -904,7 +887,10 @@ impl InnerSvgPath {
 
     /// Reverse the contours
     #[allow(clippy::too_many_lines)]
-    fn reverse_contour(contour: &[SvgItem], carry_point: (f64, f64)) -> (Vec<SvgItem>, (f64, f64)) {
+    fn reverse_contour(
+        contour: &[PathSegment],
+        carry_point: (f64, f64),
+    ) -> (Vec<PathSegment>, (f64, f64)) {
         if contour.is_empty() {
             return (vec![], carry_point);
         }
@@ -919,7 +905,7 @@ impl InnerSvgPath {
         let mut forward_ctrl2: Vec<Option<(f64, f64)>> = vec![None];
 
         for item in contour {
-            match item.inner {
+            match *item {
                 PathSegment::MoveTo { x, y, .. } => {
                     start = (x, y);
                     cur = start;
@@ -955,10 +941,7 @@ impl InnerSvgPath {
             pts.push(cur);
         }
 
-        let closed = matches!(
-            contour.last().map(|c| &c.inner),
-            Some(PathSegment::ClosePath { .. })
-        );
+        let closed = matches!(contour.last(), Some(PathSegment::ClosePath { .. }));
 
         // pts[0] = contour start (carried-in or from this contour's own MoveTo)
         // pts[k] = point after contour[k-1] runs, for k = 1..=contour.len()
@@ -975,12 +958,10 @@ impl InnerSvgPath {
         // -------------------------
         // 2. start reversed path
         // -------------------------
-        out.push(SvgItem {
-            inner: PathSegment::MoveTo {
-                abs: true,
-                x: pts[last_idx].0,
-                y: pts[last_idx].1,
-            },
+        out.push(PathSegment::MoveTo {
+            abs: true,
+            x: pts[last_idx].0,
+            y: pts[last_idx].1,
         });
 
         // -------------------------
@@ -992,30 +973,26 @@ impl InnerSvgPath {
             let seg_start = pts[i]; // forward start of contour[i]
             let seg_end = pts[i + 1]; // forward end of contour[i] == prev in old code
 
-            match contour[i].inner {
+            match contour[i] {
                 PathSegment::LineTo { .. }
                 | PathSegment::HorizontalLineTo { .. }
                 | PathSegment::VerticalLineTo { .. } => {
-                    out.push(SvgItem {
-                        inner: PathSegment::LineTo {
-                            abs: true,
-                            x: seg_start.0,
-                            y: seg_start.1,
-                        },
+                    out.push(PathSegment::LineTo {
+                        abs: true,
+                        x: seg_start.0,
+                        y: seg_start.1,
                     });
                 }
 
                 PathSegment::CurveTo { x1, y1, x2, y2, .. } => {
-                    out.push(SvgItem {
-                        inner: PathSegment::CurveTo {
-                            abs: true,
-                            x1: x2,
-                            y1: y2,
-                            x2: x1,
-                            y2: y1,
-                            x: seg_start.0,
-                            y: seg_start.1,
-                        },
+                    out.push(PathSegment::CurveTo {
+                        abs: true,
+                        x1: x2,
+                        y1: y2,
+                        x2: x1,
+                        y2: y1,
+                        x: seg_start.0,
+                        y: seg_start.1,
                     });
                 }
 
@@ -1025,28 +1002,24 @@ impl InnerSvgPath {
                     let rx = 2.0 * seg_start.0 - prev_ctrl2.0;
                     let ry = 2.0 * seg_start.1 - prev_ctrl2.1;
 
-                    out.push(SvgItem {
-                        inner: PathSegment::CurveTo {
-                            abs: true,
-                            x1: x2,
-                            y1: y2,
-                            x2: rx,
-                            y2: ry,
-                            x: seg_start.0,
-                            y: seg_start.1,
-                        },
+                    out.push(PathSegment::CurveTo {
+                        abs: true,
+                        x1: x2,
+                        y1: y2,
+                        x2: rx,
+                        y2: ry,
+                        x: seg_start.0,
+                        y: seg_start.1,
                     });
                 }
 
                 PathSegment::Quadratic { x1, y1, .. } => {
-                    out.push(SvgItem {
-                        inner: PathSegment::Quadratic {
-                            abs: true,
-                            x1,
-                            y1,
-                            x: seg_start.0,
-                            y: seg_start.1,
-                        },
+                    out.push(PathSegment::Quadratic {
+                        abs: true,
+                        x1,
+                        y1,
+                        x: seg_start.0,
+                        y: seg_start.1,
                     });
                 }
 
@@ -1058,17 +1031,15 @@ impl InnerSvgPath {
                     sweep,
                     ..
                 } => {
-                    out.push(SvgItem {
-                        inner: PathSegment::EllipticalArc {
-                            abs: true,
-                            rx,
-                            ry,
-                            x_axis_rotation,
-                            large_arc,
-                            sweep: !sweep,
-                            x: seg_start.0,
-                            y: seg_start.1,
-                        },
+                    out.push(PathSegment::EllipticalArc {
+                        abs: true,
+                        rx,
+                        ry,
+                        x_axis_rotation,
+                        large_arc,
+                        sweep: !sweep,
+                        x: seg_start.0,
+                        y: seg_start.1,
                     });
                 }
 
@@ -1079,9 +1050,7 @@ impl InnerSvgPath {
         }
 
         if closed {
-            out.push(SvgItem {
-                inner: PathSegment::ClosePath { abs: true },
-            });
+            out.push(PathSegment::ClosePath { abs: true });
         }
 
         (out, forward_end_point)
@@ -1092,9 +1061,9 @@ impl Display for InnerSvgPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
         for item in &self.items {
-            let segment_str = item.to_string();
+            let segment_str = &to_string_path_segment(item);
             if !segment_str.is_empty() {
-                result.push_str(&segment_str);
+                result.push_str(segment_str);
             }
         }
         write!(f, "{result}")

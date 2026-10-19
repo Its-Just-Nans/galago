@@ -11,7 +11,7 @@ use xmltree::{AttributeMap, Element, EmitterConfig};
 use crate::GalagoApp;
 use crate::path::{
     InnerSvgPath, circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
-    rect_to_path,
+    rect_to_path, to_string_path_segment,
 };
 
 /// `TreeViewer` Struct
@@ -481,16 +481,16 @@ impl TreeViewer {
                             let mut item_edit = None;
                             for (idx, path_segment) in segments.iter_mut().enumerate() {
                                 ui.horizontal_wrapped(|ui| {
-                                    let letter = path_segment.get_letter();
+                                    let letter = path_segment.command() as char;
 
                                     if ui.button(letter.to_string()).clicked() {
                                         idx_to_update = Some(idx);
                                     }
-                                    if let PathSegment::ClosePath { abs: _ } = path_segment.inner {
+                                    if let PathSegment::ClosePath { abs: _ } = path_segment {
                                         // ClosePath don't have numbers
                                         return;
                                     }
-                                    let curr_value = path_segment.to_string();
+                                    let curr_value = to_string_path_segment(path_segment);
 
                                     if self.edit_path_as_input {
                                         // remove first character from the value

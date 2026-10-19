@@ -75,7 +75,7 @@ impl SvgPath {
         let mut new_bb = self.bounding_box;
         #[allow(clippy::cast_possible_truncation)]
         for one_point in &mut self.d.items {
-            match &mut one_point.inner {
+            match one_point {
                 PathSegment::MoveTo { abs, x, y } => {
                     let (x, y) = (*x as f32, *y as f32);
                     let (current_x, current_y) = if *abs { (x, y) } else { (p.x + x, p.y + y) };
@@ -97,7 +97,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        one_point.inner = PathSegment::MoveTo {
+                        *one_point = PathSegment::MoveTo {
                             abs: true,
                             x: f64::from(new_pos.x),
                             y: f64::from(new_pos.y),
@@ -133,7 +133,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        one_point.inner = PathSegment::LineTo {
+                        *one_point = PathSegment::LineTo {
                             abs: true,
                             x: f64::from(new_pos.x),
                             y: f64::from(new_pos.y),
@@ -169,7 +169,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        one_point.inner = PathSegment::HorizontalLineTo {
+                        *one_point = PathSegment::HorizontalLineTo {
                             abs: true,
                             x: f64::from(new_pos.x),
                         };
@@ -204,7 +204,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        one_point.inner = PathSegment::VerticalLineTo {
+                        *one_point = PathSegment::VerticalLineTo {
                             abs: true,
                             y: f64::from(new_pos.y),
                         };
@@ -256,7 +256,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = middle + resp.drag_delta();
-                        one_point.inner = PathSegment::Quadratic {
+                        *one_point = PathSegment::Quadratic {
                             abs: true,
                             x1: f64::from(new_pos.x),
                             y1: f64::from(new_pos.y),
@@ -288,7 +288,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = end + resp.drag_delta();
-                        one_point.inner = PathSegment::Quadratic {
+                        *one_point = PathSegment::Quadratic {
                             abs: true,
                             x1: f64::from(x1),
                             y1: f64::from(y1),
@@ -302,7 +302,9 @@ impl SvgPath {
                     }
                 }
                 PathSegment::ClosePath { abs } => {
-                    // TODO join to the first point
+                    if *abs {
+                        // TODO join to the first point
+                    }
                 }
                 _ => {}
             }

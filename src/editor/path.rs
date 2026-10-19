@@ -15,7 +15,7 @@ pub(crate) struct SvgPath {
     /// inner path
     #[serde(skip)]
     d: InnerSvgPath,
-    /// bouding box
+    /// bounding box
     bounding_box: Rect,
 }
 

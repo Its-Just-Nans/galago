@@ -53,7 +53,7 @@ impl SvgPolygon {
             .as_chunks::<2>().0.iter()
             .map(|c| Pos2::new(c[0], c[1]))
             .collect::<Vec<Pos2>>();
-        let bounding_box = bounding_box(&points).ok_or("Cannot get bouding box")?;
+        let bounding_box = bounding_box(&points).ok_or("Cannot get bounding box")?;
         let shape = shape_from_points(&points);
         Ok(Self {
             points,

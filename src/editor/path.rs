@@ -72,7 +72,7 @@ impl SvgPath {
         let mut p = Pos2::new(0.0, 0.0);
         let detection_zone = 15.0;
         let mut moved = false;
-        let mut new_bb = self.bounding_box;
+        let mut new_bb = Rect::ZERO; // self.bounding_box; // TODO
         #[allow(clippy::cast_possible_truncation)]
         for one_point in &mut self.d.items {
             match one_point {
@@ -92,6 +92,9 @@ impl SvgPath {
                         Stroke::default(),
                         egui::StrokeKind::Middle,
                     );
+                    if new_bb == Rect::ZERO {
+                        new_bb = Rect::from_pos(p);
+                    }
                     if resp.dragged()
                         && let Some(pos) = resp.interact_pointer_pos()
                         && zone.contains(pos)

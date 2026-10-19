@@ -9,7 +9,6 @@ use bladvak::{
     app::BladvakPanel,
     eframe::egui::{self, CollapsingHeader},
 };
-use resvg::usvg::Options;
 
 use crate::{GalagoApp, editor::polygon::SvgPolygon};
 use path::SvgPath;
@@ -122,13 +121,7 @@ fn recursive_add(
 
 impl ShapeEditor {
     /// Show ui
-    fn show(
-        &mut self,
-        ui: &mut egui::Ui,
-        svg: &str,
-        _usvg_options: &Options<'_>, // TODO
-        error_manager: &mut ErrorManager,
-    ) {
+    fn show(&mut self, ui: &mut egui::Ui, svg: &str, error_manager: &mut ErrorManager) {
         if ui.button("Convert to shape").clicked() {
             let xml_opt = resvg::usvg::roxmltree::ParsingOptions {
                 allow_dtd: true,
@@ -145,7 +138,7 @@ impl ShapeEditor {
             }
         }
         let mut to_remove = None;
-        for (idx, shape) in self.shapes.iter().enumerate() {
+        for (idx, shape) in self.shapes.iter_mut().enumerate() {
             ui.horizontal(|ui| {
                 CollapsingHeader::new(shape.inner.name())
                     .id_salt(("collapsing", shape.inner.name(), idx))
@@ -155,6 +148,7 @@ impl ShapeEditor {
                 if ui.button("Delete").clicked() {
                     to_remove = Some(idx);
                 }
+                ui.checkbox(&mut shape.is_visible, "Show");
             });
         }
         if let Some(idx) = to_remove {
@@ -203,8 +197,6 @@ impl BladvakPanel for ShapeEditorPanel {
         let Some(document) = app.documents.get_current_doc_mut() else {
             return;
         };
-        document
-            .shape_editor
-            .show(ui, &document.svg, &app.usvg_options, error_manager);
+        document.shape_editor.show(ui, &document.svg, error_manager);
     }
 }

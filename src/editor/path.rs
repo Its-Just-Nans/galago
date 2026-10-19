@@ -583,7 +583,8 @@ impl SvgPath {
                         .line_segment([last_m, p], Stroke::new(1.0, Color32::BLACK));
                 }
                 PathSegment::EllipticalArc { .. } => {
-                    // TODO ARC
+                    // TODO ARC - convert to bezier curves with
+                    // https://docs.rs/svgtypes/latest/src/svgtypes/path.rs.html#975
                 }
             }
             if !new_bb.contains(p) {

@@ -598,9 +598,56 @@ impl SvgPath {
                     ui.painter()
                         .line_segment([last_m, p], Stroke::new(1.0, Color32::BLACK));
                 }
-                PathSegment::EllipticalArc { .. } => {
-                    // TODO ARC - convert to bezier curves with
+                PathSegment::EllipticalArc {
+                    abs,
+                    rx,
+                    ry,
+                    x_axis_rotation,
+                    large_arc,
+                    sweep,
+                    x,
+                    y,
+                } => {
+                    use kurbo;
+                    let (x, y) = if *abs {
+                        (*x, *y)
+                    } else {
+                        (f64::from(p.x) + *x, f64::from(p.y) + *y)
+                    };
+                    // ARC - convert to bezier curves with
                     // https://docs.rs/svgtypes/latest/src/svgtypes/path.rs.html#975
+                    let svg_arc = kurbo::SvgArc {
+                        from: kurbo::Point::new(f64::from(p.x), f64::from(p.y)),
+                        to: kurbo::Point::new(x, y),
+                        radii: kurbo::Vec2::new(*rx, *ry),
+                        x_rotation: x_axis_rotation.to_radians(),
+                        large_arc: *large_arc,
+                        sweep: *sweep,
+                    };
+
+                    match kurbo::Arc::from_svg_arc(&svg_arc) {
+                        Some(arc) => {
+                            arc.to_cubic_beziers(0.1, |p1, p2, end| {
+                                let start = Pos2::new(p.x, p.y);
+                                let middle1 = Pos2::new(p1.x as f32, p1.y as f32);
+                                let middle2 = Pos2::new(p2.x as f32, p2.y as f32);
+                                let end = Pos2::new(end.x as f32, end.y as f32);
+                                p = end;
+                                ui.painter().add(Shape::CubicBezier(CubicBezierShape {
+                                    points: [start, middle1, middle2, end],
+                                    closed: false,
+                                    fill: Color32::TRANSPARENT,
+                                    stroke: PathStroke::new(1.0, Color32::BLACK),
+                                }));
+                            });
+                        }
+                        None => {
+                            ui.painter().line_segment(
+                                [p, Pos2::new(x as f32, y as f32)],
+                                Stroke::new(1.0, Color32::BLACK),
+                            );
+                        }
+                    }
                 }
             }
             if !new_bb.contains(p) {

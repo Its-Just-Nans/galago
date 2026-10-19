@@ -248,8 +248,12 @@ impl SvgPath {
                     if is_debug {
                         ui.painter().debug_rect(zone, Color32::YELLOW, "point");
                     }
-                    ui.painter()
-                        .circle(middle, size_point, Color32::WHITE, Stroke::default());
+                    ui.painter().circle(
+                        middle,
+                        size_point / 2.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                    );
                     ui.painter()
                         .line_segment([start, middle], Stroke::new(1.0, Color32::RED));
                     if !new_bb.contains(middle) {
@@ -400,8 +404,12 @@ impl SvgPath {
                     if is_debug {
                         ui.painter().debug_rect(zone, Color32::YELLOW, "point");
                     }
-                    ui.painter()
-                        .circle(middle1, size_point, Color32::WHITE, Stroke::default());
+                    ui.painter().circle(
+                        middle1,
+                        size_point / 2.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                    );
                     ui.painter()
                         .line_segment([start, middle1], Stroke::new(1.0, Color32::RED));
                     if !new_bb.contains(middle1) {
@@ -433,8 +441,12 @@ impl SvgPath {
                     if is_debug {
                         ui.painter().debug_rect(zone, Color32::YELLOW, "point");
                     }
-                    ui.painter()
-                        .circle(middle2, size_point, Color32::WHITE, Stroke::default());
+                    ui.painter().circle(
+                        middle2,
+                        size_point / 2.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                    );
                     if !new_bb.contains(middle2) {
                         new_bb = new_bb.union(Rect::from_pos(middle2));
                     }
@@ -522,8 +534,12 @@ impl SvgPath {
                     if is_debug {
                         ui.painter().debug_rect(zone, Color32::YELLOW, "point");
                     }
-                    ui.painter()
-                        .circle(middle2, size_point, Color32::WHITE, Stroke::default());
+                    ui.painter().circle(
+                        middle2,
+                        size_point / 2.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                    );
                     if !new_bb.contains(middle2) {
                         new_bb = new_bb.union(Rect::from_pos(middle2));
                     }

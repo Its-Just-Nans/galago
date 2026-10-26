@@ -4,7 +4,7 @@ use bladvak::{
     ErrorManager,
     eframe::{
         egui::{self, Color32, Pos2, Rect, Shape, Stroke, Vec2},
-        epaint::{CubicBezierShape, PathStroke, QuadraticBezierShape},
+        epaint::{CubicBezierShape, EllipseShape, PathStroke, QuadraticBezierShape},
     },
 };
 use resvg::usvg::roxmltree::Node;
@@ -624,15 +624,16 @@ impl SvgPath {
                         large_arc: *large_arc,
                         sweep: *sweep,
                     };
-
+                    let end = Pos2::new(x as f32, y as f32);
                     match kurbo::Arc::from_svg_arc(&svg_arc) {
                         Some(arc) => {
+                            let mut temp_p = p;
                             arc.to_cubic_beziers(0.1, |p1, p2, end| {
-                                let start = Pos2::new(p.x, p.y);
+                                let start = Pos2::new(temp_p.x, temp_p.y);
                                 let middle1 = Pos2::new(p1.x as f32, p1.y as f32);
                                 let middle2 = Pos2::new(p2.x as f32, p2.y as f32);
                                 let end = Pos2::new(end.x as f32, end.y as f32);
-                                p = end;
+                                temp_p = end;
                                 ui.painter().add(Shape::CubicBezier(CubicBezierShape {
                                     points: [start, middle1, middle2, end],
                                     closed: false,
@@ -640,6 +641,29 @@ impl SvgPath {
                                     stroke: PathStroke::new(1.0, Color32::BLACK),
                                 }));
                             });
+
+                            // show the ellipse
+                            let center = Pos2::new(arc.center.x as f32, arc.center.y as f32);
+                            let radius = Vec2::new(arc.radii.x as f32, arc.radii.y as f32);
+                            ui.painter().add(Shape::Ellipse(EllipseShape {
+                                center,
+                                radius,
+                                fill: Color32::TRANSPARENT,
+                                stroke: Stroke::new(1.0, Color32::RED),
+                                angle: x_axis_rotation.to_radians() as f32,
+                            }));
+                            let rect_center =
+                                Rect::from_center_size(center, Vec2::splat(size_point));
+                            let zone = rect_center.expand(detection_zone);
+                            if is_debug {
+                                ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                            }
+                            ui.painter().circle(
+                                center,
+                                size_point / 2.0,
+                                Color32::WHITE,
+                                Stroke::default(),
+                            );
                         }
                         None => {
                             ui.painter().line_segment(
@@ -648,6 +672,20 @@ impl SvgPath {
                             );
                         }
                     }
+                    p = end;
+
+                    let rect_end = Rect::from_center_size(end, Vec2::splat(size_point));
+                    let zone = rect_end.expand(detection_zone);
+                    if is_debug {
+                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                    }
+                    ui.painter().rect(
+                        rect_end,
+                        0.0,
+                        Color32::WHITE,
+                        Stroke::default(),
+                        egui::StrokeKind::Middle,
+                    );
                 }
             }
             if !new_bb.contains(p) {

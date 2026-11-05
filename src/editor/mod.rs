@@ -158,6 +158,15 @@ impl ShapeEditor {
                 is_visible: true,
             });
         }
+        if ui.button("Circle").clicked() {
+            self.shapes.push(Shape {
+                inner: InnerShape::Circle(SvgCircle::from_center_radius(
+                    Pos2::new(10.0, 10.0),
+                    10.0,
+                )),
+                is_visible: true,
+            });
+        }
         if ui.button("Convert to shape").clicked() {
             let xml_opt = resvg::usvg::roxmltree::ParsingOptions {
                 allow_dtd: true,

@@ -1,5 +1,6 @@
 //! SVG editor
 
+mod circle;
 mod path;
 mod polygon;
 mod rect;
@@ -7,10 +8,11 @@ mod rect;
 use bladvak::{
     ErrorManager,
     app::BladvakPanel,
-    eframe::egui::{self, CollapsingHeader, ScrollArea},
+    eframe::egui::{self, CollapsingHeader, Color32, Pos2, ScrollArea},
 };
 
 use crate::{GalagoApp, editor::polygon::SvgPolygon};
+use circle::SvgCircle;
 use path::SvgPath;
 use rect::SvgRect;
 
@@ -30,6 +32,9 @@ struct Shape {
     is_visible: bool,
 }
 
+/// Default fill color
+const DEFAULT_COLOR: Color32 = Color32::BLACK;
+
 /// Shape type
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 enum InnerShape {
@@ -39,6 +44,8 @@ enum InnerShape {
     Path(SvgPath),
     /// polygon
     Polygon(SvgPolygon),
+    /// circle
+    Circle(SvgCircle),
 }
 
 impl InnerShape {
@@ -55,6 +62,9 @@ impl InnerShape {
             Self::Polygon(shape) => {
                 shape.show(ui, idx, size_point, error_manager);
             }
+            Self::Circle(shape) => {
+                shape.show(ui, idx, size_point, error_manager);
+            }
         }
     }
     /// name
@@ -63,6 +73,7 @@ impl InnerShape {
             Self::Rect(_) => "rect",
             Self::Path(_) => "path",
             Self::Polygon(_) => "polygon",
+            Self::Circle(_) => "circle",
         }
     }
 }
@@ -73,7 +84,7 @@ fn recursive_add(
     group: &resvg::usvg::roxmltree::Node<'_, '_>,
     error_manager: &mut ErrorManager,
 ) {
-    for one_node in group.children() {
+    for one_node in group.children().filter(|n| n.is_root() || n.is_element()) {
         match one_node.tag_name().name() {
             "path" => match SvgPath::try_parse(one_node) {
                 Ok(s) => {
@@ -111,10 +122,26 @@ fn recursive_add(
                     error_manager.add_error(err);
                 }
             },
+            "circle" => match SvgCircle::try_parse(one_node) {
+                Ok(s) => {
+                    let shape = Shape {
+                        inner: InnerShape::Circle(s),
+                        is_visible: true,
+                    };
+                    rects.push(shape);
+                }
+                Err(err) => {
+                    error_manager.add_error(err);
+                }
+            },
             "g" | "svg" => {
                 recursive_add(rects, &one_node, error_manager);
             }
-            _ => {}
+            s => {
+                error_manager.add_error(format!(
+                    "Cannot transform '{s}' ({one_node:?}): unimplemented"
+                ));
+            }
         }
     }
 }
@@ -122,6 +149,15 @@ fn recursive_add(
 impl ShapeEditor {
     /// Show ui
     fn show(&mut self, ui: &mut egui::Ui, svg: &str, error_manager: &mut ErrorManager) {
+        if ui.button("Rect").clicked() {
+            self.shapes.push(Shape {
+                inner: InnerShape::Rect(SvgRect::from_min_max(
+                    Pos2::new(0.0, 0.0),
+                    Pos2::new(50.0, 50.0),
+                )),
+                is_visible: true,
+            });
+        }
         if ui.button("Convert to shape").clicked() {
             let xml_opt = resvg::usvg::roxmltree::ParsingOptions {
                 allow_dtd: true,
@@ -143,6 +179,29 @@ impl ShapeEditor {
                 CollapsingHeader::new(shape.inner.name())
                     .id_salt(("collapsing", shape.inner.name(), idx))
                     .show(ui, |ui| {
+                        let current_color = match &mut shape.inner {
+                            InnerShape::Rect(s) => &mut s.fill,
+                            InnerShape::Circle(s) => &mut s.fill,
+                            _ => &mut None,
+                        };
+                        if let Some(c) = current_color {
+                            egui::color_picker::color_edit_button_srgba(
+                                ui,
+                                c,
+                                egui::color_picker::Alpha::OnlyBlend,
+                            );
+                        } else {
+                            let mut color = DEFAULT_COLOR;
+                            if egui::color_picker::color_edit_button_srgba(
+                                ui,
+                                &mut color,
+                                egui::color_picker::Alpha::OnlyBlend,
+                            )
+                            .clicked()
+                            {
+                                *current_color = Some(color);
+                            }
+                        }
                         ui.label(format!("{shape:#?}"));
                     });
                 if ui.button("Delete").clicked() {

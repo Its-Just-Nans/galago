@@ -6,6 +6,8 @@ use bladvak::{
 };
 use resvg::usvg::roxmltree::Node;
 
+use crate::editor::DEFAULT_COLOR;
+
 /// svg rect
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub(crate) struct SvgRect {
@@ -22,14 +24,24 @@ pub(crate) struct SvgRect {
     /// ry
     ry: Option<f32>,
     /// fill
-    fill: Option<Color32>,
+    pub fill: Option<Color32>,
     /// Stroke
-    stroke: Option<Stroke>,
+    pub stroke: Option<Stroke>,
 }
 
 impl SvgRect {
+    /// From min max but keep the props
+    pub(crate) fn with_min_max(&mut self, min: Pos2, max: Pos2) -> Self {
+        SvgRect {
+            x: min.x,
+            y: min.y,
+            width: max.x - min.x,
+            height: max.y - min.y,
+            ..*self
+        }
+    }
     /// From min max
-    fn from_min_max(min: Pos2, max: Pos2) -> Self {
+    pub(crate) fn from_min_max(min: Pos2, max: Pos2) -> Self {
         SvgRect {
             x: min.x,
             y: min.y,
@@ -41,6 +53,7 @@ impl SvgRect {
             stroke: None,
         }
     }
+
     /// Try to parse the value
     pub(crate) fn try_parse(node: Node<'_, '_>) -> Result<Self, String> {
         let x = node
@@ -109,7 +122,7 @@ impl SvgRect {
         painter.rect(
             rect,
             0.0,
-            Color32::RED,
+            self.fill.unwrap_or(DEFAULT_COLOR),
             Stroke::default(),
             egui::StrokeKind::Middle,
         );
@@ -215,34 +228,30 @@ impl SvgRect {
                 let bottom = pos.y > rect.max.y - corner_length_height;
                 let pos = pos.floor();
                 if left && top {
-                    *self = Self::from_min_max(pos, rect.max);
+                    *self = self.with_min_max(pos, rect.max);
                 } else if right && top {
-                    *self = Self::from_min_max(
-                        Pos2::new(rect.min.x, pos.y),
-                        Pos2::new(pos.x, rect.max.y),
-                    );
+                    *self = self
+                        .with_min_max(Pos2::new(rect.min.x, pos.y), Pos2::new(pos.x, rect.max.y));
                 } else if left && bottom {
-                    *self = Self::from_min_max(
-                        Pos2::new(pos.x, rect.min.y),
-                        Pos2::new(rect.max.x, pos.y),
-                    );
+                    *self = self
+                        .with_min_max(Pos2::new(pos.x, rect.min.y), Pos2::new(rect.max.x, pos.y));
                 } else if right && bottom {
-                    *self = Self::from_min_max(rect.min, pos);
+                    *self = self.with_min_max(rect.min, pos);
                 } else if is_top_bt && top {
                     // Move top edge
-                    *self = Self::from_min_max(Pos2::new(rect.min.x, pos.y), rect.max);
+                    *self = self.with_min_max(Pos2::new(rect.min.x, pos.y), rect.max);
                 } else if is_top_bt && bottom {
                     // Move bottom edge
-                    *self = Self::from_min_max(rect.min, Pos2::new(rect.max.x, pos.y));
+                    *self = self.with_min_max(rect.min, Pos2::new(rect.max.x, pos.y));
                 } else if is_r_l && left {
                     // Move left edge
-                    *self = Self::from_min_max(Pos2::new(pos.x, rect.min.y), rect.max);
+                    *self = self.with_min_max(Pos2::new(pos.x, rect.min.y), rect.max);
                 } else if is_r_l && right {
                     // Move right edge
-                    *self = Self::from_min_max(rect.min, Pos2::new(pos.x, rect.max.y));
+                    *self = self.with_min_max(rect.min, Pos2::new(pos.x, rect.max.y));
                 } else {
                     let delta = resp.drag_delta();
-                    *self = Self::from_min_max(rect.min + delta, rect.max + delta);
+                    *self = self.with_min_max(rect.min + delta, rect.max + delta);
                 }
             }
         }

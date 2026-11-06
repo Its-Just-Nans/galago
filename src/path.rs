@@ -2,14 +2,9 @@
 //! Good reading <https://razrfalcon.github.io/notes-on-svg-parsing/path-data.html>
 
 use std::fmt::{Display, Formatter, Write};
-use svgtypes::{PathParser, PathSegment};
+use svgtypes::PathParser;
 
-/// Represents a single SVG path segment.
-#[derive(Debug, Clone)]
-pub struct SvgItem {
-    /// Represents a single SVG path segment.
-    pub inner: PathSegment,
-}
+use crate::path_segment::GalagoPathSegment;
 
 /// Round a value
 fn round_to(value: f64, decimals: u64) -> f64 {
@@ -18,95 +13,11 @@ fn round_to(value: f64, decimals: u64) -> f64 {
     (value * factor).round() / factor
 }
 
-impl SvgItem {
-    /// Returns the letter
-    #[must_use]
-    pub fn get_letter(&self) -> char {
-        self.inner.command() as char
-    }
-
-    /// Returns the value of the segment as a string.
-    /// # Errors
-    /// Returns an error if the segment cannot be parsed.
-    pub fn set_value(&mut self, to_add: SvgItem) {
-        *self = to_add;
-    }
-}
-
-/// `PathSegment` to string
-pub(crate) fn to_string_path_segment(p: &PathSegment) -> String {
-    let letter = p.command() as char;
-    match p {
-        PathSegment::MoveTo { abs: _, x, y } | PathSegment::LineTo { abs: _, x, y } => {
-            // move to
-            format!("{letter}{x} {y}")
-        }
-        PathSegment::HorizontalLineTo { abs: _, x } => {
-            format!("{letter}{x}")
-        }
-        PathSegment::VerticalLineTo { abs: _, y } => {
-            format!("{letter}{y}")
-        }
-        PathSegment::CurveTo {
-            abs: _,
-            x1,
-            y1,
-            x2,
-            y2,
-            x,
-            y,
-        } => format!("{letter}{x1} {y1} {x2} {y2} {x} {y}"),
-        PathSegment::SmoothCurveTo {
-            abs: _,
-            x2,
-            y2,
-            x,
-            y,
-        } => {
-            format!("{letter}{x2} {y2} {x} {y}")
-        }
-        PathSegment::Quadratic {
-            abs: _,
-            x1,
-            y1,
-            x,
-            y,
-        } => {
-            format!("{letter}{x1} {y1} {x} {y}")
-        }
-        PathSegment::SmoothQuadratic { abs: _, x, y } => {
-            // smooth quadratic
-            format!("{letter}{x} {y}")
-        }
-        PathSegment::EllipticalArc {
-            abs: _,
-            rx,
-            ry,
-            x_axis_rotation,
-            large_arc,
-            sweep,
-            x,
-            y,
-        } => format!(
-            "{}{} {} {} {} {} {} {}",
-            letter,
-            rx,
-            ry,
-            x_axis_rotation,
-            if *large_arc { "1" } else { "0" },
-            if *sweep { "1" } else { "0" },
-            x,
-            y
-        ),
-        PathSegment::ClosePath { abs: _ } => letter.to_string(),
-    }
-}
-
 /// Represents an SVG path, which is a collection of SVG path items.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct InnerSvgPath {
     /// A vector of SVG path items.
-    pub items: Vec<PathSegment>,
+    pub items: Vec<GalagoPathSegment>,
 }
 
 impl InnerSvgPath {
@@ -120,7 +31,7 @@ impl InnerSvgPath {
         for segment in s {
             let one_segment = segment
                 .map_err(|e| format!("Failed to parse SVG path segment: {e} in {path_str}"))?;
-            let to_add = one_segment;
+            let to_add = GalagoPathSegment::from(one_segment);
             items.push(to_add);
         }
 
@@ -135,7 +46,7 @@ impl InnerSvgPath {
 
         for item in &mut self.items {
             match item {
-                PathSegment::MoveTo { abs, x, y } => {
+                GalagoPathSegment::MoveTo { abs, x, y } => {
                     if !*abs {
                         *x += pos.0;
                         *y += pos.1;
@@ -145,7 +56,7 @@ impl InnerSvgPath {
                     pos.1 = *y;
                     subpath_start = pos;
                 }
-                PathSegment::LineTo { abs, x, y } => {
+                GalagoPathSegment::LineTo { abs, x, y } => {
                     if !*abs {
                         *x += pos.0;
                         *y += pos.1;
@@ -154,21 +65,21 @@ impl InnerSvgPath {
                     pos.0 = *x;
                     pos.1 = *y;
                 }
-                PathSegment::HorizontalLineTo { abs, x } => {
+                GalagoPathSegment::HorizontalLineTo { abs, x } => {
                     if !*abs {
                         *x += pos.0;
                         *abs = true;
                     }
                     pos.0 = *x;
                 }
-                PathSegment::VerticalLineTo { abs, y } => {
+                GalagoPathSegment::VerticalLineTo { abs, y } => {
                     if !*abs {
                         *y += pos.1;
                         *abs = true;
                     }
                     pos.1 = *y;
                 }
-                PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo {
                     abs,
                     x1,
                     y1,
@@ -189,7 +100,7 @@ impl InnerSvgPath {
                     pos.0 = *x;
                     pos.1 = *y;
                 }
-                PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
+                GalagoPathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
                     if !*abs {
                         *x2 += pos.0;
                         *y2 += pos.1;
@@ -200,7 +111,7 @@ impl InnerSvgPath {
                     pos.0 = *x;
                     pos.1 = *y;
                 }
-                PathSegment::Quadratic { abs, x1, y1, x, y } => {
+                GalagoPathSegment::Quadratic { abs, x1, y1, x, y } => {
                     if !*abs {
                         *x1 += pos.0;
                         *y1 += pos.1;
@@ -211,7 +122,7 @@ impl InnerSvgPath {
                     pos.0 = *x;
                     pos.1 = *y;
                 }
-                PathSegment::SmoothQuadratic { abs, x, y } => {
+                GalagoPathSegment::SmoothQuadratic { abs, x, y } => {
                     // quadratic
                     if !*abs {
                         *x += pos.0;
@@ -221,7 +132,7 @@ impl InnerSvgPath {
                     pos.0 = *x;
                     pos.1 = *y;
                 }
-                PathSegment::EllipticalArc {
+                GalagoPathSegment::EllipticalArc {
                     abs,
                     rx: _,
                     ry: _,
@@ -240,7 +151,7 @@ impl InnerSvgPath {
                     pos.0 = *x;
                     pos.1 = *y;
                 }
-                PathSegment::ClosePath { abs } => {
+                GalagoPathSegment::ClosePath { abs } => {
                     *abs = true;
                     pos = subpath_start;
                 }
@@ -256,7 +167,7 @@ impl InnerSvgPath {
 
         for item in &mut self.items {
             match item {
-                PathSegment::MoveTo { abs, x, y } => {
+                GalagoPathSegment::MoveTo { abs, x, y } => {
                     if *abs {
                         let rel = (*x - pos.0, *y - pos.1);
                         *x = rel.0;
@@ -267,7 +178,7 @@ impl InnerSvgPath {
                     pos.1 += *y;
                     subpath_start = pos;
                 }
-                PathSegment::LineTo { abs, x, y } => {
+                GalagoPathSegment::LineTo { abs, x, y } => {
                     if *abs {
                         let rel = (*x - pos.0, *y - pos.1);
                         *x = rel.0;
@@ -277,7 +188,7 @@ impl InnerSvgPath {
                     pos.0 += *x;
                     pos.1 += *y;
                 }
-                PathSegment::HorizontalLineTo { abs, x } => {
+                GalagoPathSegment::HorizontalLineTo { abs, x } => {
                     if *abs {
                         let rel = *x - pos.0;
                         *x = rel;
@@ -285,7 +196,7 @@ impl InnerSvgPath {
                     }
                     pos.0 += *x;
                 }
-                PathSegment::VerticalLineTo { abs, y } => {
+                GalagoPathSegment::VerticalLineTo { abs, y } => {
                     if *abs {
                         let rel = *y - pos.1;
                         *y = rel;
@@ -293,7 +204,7 @@ impl InnerSvgPath {
                     }
                     pos.1 += *y;
                 }
-                PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo {
                     abs,
                     x1,
                     y1,
@@ -314,7 +225,7 @@ impl InnerSvgPath {
                     pos.0 += *x;
                     pos.1 += *y;
                 }
-                PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
+                GalagoPathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
                     if *abs {
                         *x2 -= pos.0;
                         *y2 -= pos.1;
@@ -325,7 +236,7 @@ impl InnerSvgPath {
                     pos.0 += *x;
                     pos.1 += *y;
                 }
-                PathSegment::Quadratic { abs, x1, y1, x, y } => {
+                GalagoPathSegment::Quadratic { abs, x1, y1, x, y } => {
                     if *abs {
                         *x1 -= pos.0;
                         *y1 -= pos.1;
@@ -336,7 +247,7 @@ impl InnerSvgPath {
                     pos.0 += *x;
                     pos.1 += *y;
                 }
-                PathSegment::SmoothQuadratic { abs, x, y } => {
+                GalagoPathSegment::SmoothQuadratic { abs, x, y } => {
                     // smooth quadratic
                     if *abs {
                         *x -= pos.0;
@@ -346,7 +257,7 @@ impl InnerSvgPath {
                     pos.0 += *x;
                     pos.1 += *y;
                 }
-                PathSegment::EllipticalArc {
+                GalagoPathSegment::EllipticalArc {
                     abs,
                     rx: _,
                     ry: _,
@@ -364,7 +275,7 @@ impl InnerSvgPath {
                     pos.0 += *x;
                     pos.1 += *y;
                 }
-                PathSegment::ClosePath { abs } => {
+                GalagoPathSegment::ClosePath { abs } => {
                     *abs = false;
                     pos = subpath_start;
                 }
@@ -376,20 +287,20 @@ impl InnerSvgPath {
     pub fn translate(&mut self, dx: f64, dy: f64) {
         for item in &mut self.items {
             match item {
-                PathSegment::MoveTo { x, y, .. }
-                | PathSegment::LineTo { x, y, .. }
-                | PathSegment::SmoothQuadratic { x, y, .. }
-                | PathSegment::EllipticalArc { x, y, .. } => {
+                GalagoPathSegment::MoveTo { x, y, .. }
+                | GalagoPathSegment::LineTo { x, y, .. }
+                | GalagoPathSegment::SmoothQuadratic { x, y, .. }
+                | GalagoPathSegment::EllipticalArc { x, y, .. } => {
                     *x += dx;
                     *y += dy;
                 }
-                PathSegment::HorizontalLineTo { x, .. } => {
+                GalagoPathSegment::HorizontalLineTo { x, .. } => {
                     *x += dx;
                 }
-                PathSegment::VerticalLineTo { y, .. } => {
+                GalagoPathSegment::VerticalLineTo { y, .. } => {
                     *y += dy;
                 }
-                PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo {
                     x1,
                     y1,
                     x2,
@@ -405,20 +316,20 @@ impl InnerSvgPath {
                     *x += dx;
                     *y += dy;
                 }
-                PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                GalagoPathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
                     *x2 += dx;
                     *y2 += dy;
                     *x += dx;
                     *y += dy;
                 }
-                PathSegment::Quadratic { x1, y1, x, y, .. } => {
+                GalagoPathSegment::Quadratic { x1, y1, x, y, .. } => {
                     *x1 += dx;
                     *y1 += dy;
                     *x += dx;
                     *y += dy;
                 }
 
-                PathSegment::ClosePath { .. } => {} // No coordinates to modify
+                GalagoPathSegment::ClosePath { .. } => {} // No coordinates to modify
             }
         }
     }
@@ -427,19 +338,19 @@ impl InnerSvgPath {
     pub fn scale(&mut self, sx: f64, sy: f64) {
         for item in &mut self.items {
             match item {
-                PathSegment::MoveTo { x, y, .. }
-                | PathSegment::LineTo { x, y, .. }
-                | PathSegment::SmoothQuadratic { x, y, .. } => {
+                GalagoPathSegment::MoveTo { x, y, .. }
+                | GalagoPathSegment::LineTo { x, y, .. }
+                | GalagoPathSegment::SmoothQuadratic { x, y, .. } => {
                     *x *= sx;
                     *y *= sy;
                 }
-                PathSegment::HorizontalLineTo { x, .. } => {
+                GalagoPathSegment::HorizontalLineTo { x, .. } => {
                     *x *= sx;
                 }
-                PathSegment::VerticalLineTo { y, .. } => {
+                GalagoPathSegment::VerticalLineTo { y, .. } => {
                     *y *= sy;
                 }
-                PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo {
                     x1,
                     y1,
                     x2,
@@ -455,25 +366,25 @@ impl InnerSvgPath {
                     *x *= sx;
                     *y *= sy;
                 }
-                PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                GalagoPathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
                     *x2 *= sx;
                     *y2 *= sy;
                     *x *= sx;
                     *y *= sy;
                 }
-                PathSegment::Quadratic { x1, y1, x, y, .. } => {
+                GalagoPathSegment::Quadratic { x1, y1, x, y, .. } => {
                     *x1 *= sx;
                     *y1 *= sy;
                     *x *= sx;
                     *y *= sy;
                 }
-                PathSegment::EllipticalArc { rx, ry, x, y, .. } => {
+                GalagoPathSegment::EllipticalArc { rx, ry, x, y, .. } => {
                     *rx *= sx.abs();
                     *ry *= sy.abs();
                     *x *= sx;
                     *y *= sy;
                 }
-                PathSegment::ClosePath { .. } => {}
+                GalagoPathSegment::ClosePath { .. } => {}
             }
         }
     }
@@ -494,15 +405,16 @@ impl InnerSvgPath {
 
         for item in &mut self.items {
             match item {
-                PathSegment::MoveTo { x, y, .. }
-                | PathSegment::LineTo { x, y, .. }
-                | PathSegment::SmoothQuadratic { x, y, .. } => {
+                GalagoPathSegment::MoveTo { x, y, .. }
+                | GalagoPathSegment::LineTo { x, y, .. }
+                | GalagoPathSegment::SmoothQuadratic { x, y, .. } => {
                     rotate_point(x, y);
                 }
-                PathSegment::HorizontalLineTo { .. } | PathSegment::VerticalLineTo { .. } => {
+                GalagoPathSegment::HorizontalLineTo { .. }
+                | GalagoPathSegment::VerticalLineTo { .. } => {
                     // You could convert these to LineTo or skip them
                 }
-                PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo {
                     x1,
                     y1,
                     x2,
@@ -515,15 +427,15 @@ impl InnerSvgPath {
                     rotate_point(x2, y2);
                     rotate_point(x, y);
                 }
-                PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                GalagoPathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
                     rotate_point(x2, y2);
                     rotate_point(x, y);
                 }
-                PathSegment::Quadratic { x1, y1, x, y, .. } => {
+                GalagoPathSegment::Quadratic { x1, y1, x, y, .. } => {
                     rotate_point(x1, y1);
                     rotate_point(x, y);
                 }
-                PathSegment::EllipticalArc {
+                GalagoPathSegment::EllipticalArc {
                     x,
                     y,
                     x_axis_rotation,
@@ -533,7 +445,7 @@ impl InnerSvgPath {
                     *x_axis_rotation += angle_deg;
                 }
                 #[allow(clippy::match_same_arms)]
-                PathSegment::ClosePath { .. } => {
+                GalagoPathSegment::ClosePath { .. } => {
                     // close path
                 }
             }
@@ -544,19 +456,19 @@ impl InnerSvgPath {
     pub fn round(&mut self, decimal: u64) {
         for item in &mut self.items {
             match item {
-                PathSegment::MoveTo { x, y, .. }
-                | PathSegment::LineTo { x, y, .. }
-                | PathSegment::SmoothQuadratic { x, y, .. } => {
+                GalagoPathSegment::MoveTo { x, y, .. }
+                | GalagoPathSegment::LineTo { x, y, .. }
+                | GalagoPathSegment::SmoothQuadratic { x, y, .. } => {
                     *x = round_to(*x, decimal);
                     *y = round_to(*y, decimal);
                 }
-                PathSegment::HorizontalLineTo { x, .. } => {
+                GalagoPathSegment::HorizontalLineTo { x, .. } => {
                     *x = round_to(*x, decimal);
                 }
-                PathSegment::VerticalLineTo { y, .. } => {
+                GalagoPathSegment::VerticalLineTo { y, .. } => {
                     *y = round_to(*y, decimal);
                 }
-                PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo {
                     x1,
                     y1,
                     x2,
@@ -572,19 +484,19 @@ impl InnerSvgPath {
                     *x = round_to(*x, decimal);
                     *y = round_to(*y, decimal);
                 }
-                PathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
+                GalagoPathSegment::SmoothCurveTo { x2, y2, x, y, .. } => {
                     *x2 = round_to(*x2, decimal);
                     *y2 = round_to(*y2, decimal);
                     *x = round_to(*x, decimal);
                     *y = round_to(*y, decimal);
                 }
-                PathSegment::Quadratic { x1, y1, x, y, .. } => {
+                GalagoPathSegment::Quadratic { x1, y1, x, y, .. } => {
                     *x1 = round_to(*x1, decimal);
                     *y1 = round_to(*y1, decimal);
                     *x = round_to(*x, decimal);
                     *y = round_to(*y, decimal);
                 }
-                PathSegment::EllipticalArc {
+                GalagoPathSegment::EllipticalArc {
                     rx,
                     ry,
                     x_axis_rotation,
@@ -598,7 +510,7 @@ impl InnerSvgPath {
                     *x = round_to(*x, decimal);
                     *y = round_to(*y, decimal);
                 }
-                PathSegment::ClosePath { .. } => {}
+                GalagoPathSegment::ClosePath { .. } => {}
             }
         }
     }
@@ -614,7 +526,7 @@ impl InnerSvgPath {
         for (j, item) in self.items.iter_mut().enumerate() {
             if j == index {
                 match item {
-                    PathSegment::MoveTo { abs, x, y } => {
+                    GalagoPathSegment::MoveTo { abs, x, y } => {
                         if *abs {
                             *x -= pos.0;
                             *y -= pos.1;
@@ -627,7 +539,7 @@ impl InnerSvgPath {
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                         // subpath_start = pos;
                     }
-                    PathSegment::LineTo { abs, x, y } => {
+                    GalagoPathSegment::LineTo { abs, x, y } => {
                         // line to
                         if *abs {
                             *x -= pos.0;
@@ -640,7 +552,7 @@ impl InnerSvgPath {
                         pos.0 = if *abs { *x } else { pos.0 + *x };
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
-                    PathSegment::HorizontalLineTo { abs, x } => {
+                    GalagoPathSegment::HorizontalLineTo { abs, x } => {
                         if *abs {
                             *x -= pos.0;
                         } else {
@@ -649,7 +561,7 @@ impl InnerSvgPath {
                         *abs = !*abs;
                         pos.0 = if *abs { *x } else { pos.0 + *x };
                     }
-                    PathSegment::VerticalLineTo { abs, y } => {
+                    GalagoPathSegment::VerticalLineTo { abs, y } => {
                         if *abs {
                             *y -= pos.1;
                         } else {
@@ -658,7 +570,7 @@ impl InnerSvgPath {
                         *abs = !*abs;
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
-                    PathSegment::CurveTo {
+                    GalagoPathSegment::CurveTo {
                         abs,
                         x1,
                         y1,
@@ -686,7 +598,7 @@ impl InnerSvgPath {
                         pos.0 = if *abs { *x } else { pos.0 + *x };
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
-                    PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
+                    GalagoPathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
                         if *abs {
                             *x2 -= pos.0;
                             *y2 -= pos.1;
@@ -702,7 +614,7 @@ impl InnerSvgPath {
                         pos.0 = if *abs { *x } else { pos.0 + *x };
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
-                    PathSegment::Quadratic { abs, x1, y1, x, y } => {
+                    GalagoPathSegment::Quadratic { abs, x1, y1, x, y } => {
                         if *abs {
                             *x1 -= pos.0;
                             *y1 -= pos.1;
@@ -718,7 +630,7 @@ impl InnerSvgPath {
                         pos.0 = if *abs { *x } else { pos.0 + *x };
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
-                    PathSegment::SmoothQuadratic { abs, x, y } => {
+                    GalagoPathSegment::SmoothQuadratic { abs, x, y } => {
                         // smooth quadratic
                         if *abs {
                             *x -= pos.0;
@@ -731,7 +643,7 @@ impl InnerSvgPath {
                         pos.0 = if *abs { *x } else { pos.0 + *x };
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
-                    PathSegment::EllipticalArc { abs, x, y, .. } => {
+                    GalagoPathSegment::EllipticalArc { abs, x, y, .. } => {
                         if *abs {
                             *x -= pos.0;
                             *y -= pos.1;
@@ -743,7 +655,7 @@ impl InnerSvgPath {
                         pos.0 = if *abs { *x } else { pos.0 + *x };
                         pos.1 = if *abs { *y } else { pos.1 + *y };
                     }
-                    PathSegment::ClosePath { abs } => {
+                    GalagoPathSegment::ClosePath { abs } => {
                         *abs = !*abs;
                         // pos = subpath_start;
                     }
@@ -752,7 +664,7 @@ impl InnerSvgPath {
             }
             // Update the position so we know the current point at index i
             match item {
-                PathSegment::MoveTo { abs, x, y } => {
+                GalagoPathSegment::MoveTo { abs, x, y } => {
                     if *abs {
                         pos = (*x, *y);
                     } else {
@@ -761,23 +673,23 @@ impl InnerSvgPath {
                     }
                     subpath_start = pos;
                 }
-                PathSegment::LineTo { abs, x, y }
-                | PathSegment::SmoothQuadratic { abs, x, y }
-                | PathSegment::Quadratic {
+                GalagoPathSegment::LineTo { abs, x, y }
+                | GalagoPathSegment::SmoothQuadratic { abs, x, y }
+                | GalagoPathSegment::Quadratic {
                     abs,
                     x1: _,
                     y1: _,
                     x,
                     y,
                 }
-                | PathSegment::SmoothCurveTo {
+                | GalagoPathSegment::SmoothCurveTo {
                     abs,
                     x2: _,
                     y2: _,
                     x,
                     y,
                 }
-                | PathSegment::CurveTo {
+                | GalagoPathSegment::CurveTo {
                     abs,
                     x1: _,
                     y1: _,
@@ -786,7 +698,7 @@ impl InnerSvgPath {
                     x,
                     y,
                 }
-                | PathSegment::EllipticalArc { abs, x, y, .. } => {
+                | GalagoPathSegment::EllipticalArc { abs, x, y, .. } => {
                     if *abs {
                         pos = (*x, *y);
                     } else {
@@ -794,13 +706,13 @@ impl InnerSvgPath {
                         pos.1 += *y;
                     }
                 }
-                PathSegment::HorizontalLineTo { abs, x } => {
+                GalagoPathSegment::HorizontalLineTo { abs, x } => {
                     pos.0 = if *abs { *x } else { pos.0 + *x };
                 }
-                PathSegment::VerticalLineTo { abs, y } => {
+                GalagoPathSegment::VerticalLineTo { abs, y } => {
                     pos.1 = if *abs { *y } else { pos.1 + *y };
                 }
-                PathSegment::ClosePath { .. } => {
+                GalagoPathSegment::ClosePath { .. } => {
                     pos = subpath_start;
                 }
             }
@@ -817,7 +729,7 @@ impl InnerSvgPath {
                 let segment_str = if index == idx {
                     val
                 } else {
-                    &to_string_path_segment(one_item)
+                    &one_item.to_string()
                 };
                 result.push_str(segment_str);
             }
@@ -846,7 +758,7 @@ impl InnerSvgPath {
 
         for item in path.items {
             match item {
-                PathSegment::MoveTo { .. } => {
+                GalagoPathSegment::MoveTo { .. } => {
                     if !current.is_empty() {
                         contours.push(current);
                         current = Vec::new();
@@ -854,7 +766,7 @@ impl InnerSvgPath {
                     current.push(item);
                 }
 
-                PathSegment::ClosePath { .. } => {
+                GalagoPathSegment::ClosePath { .. } => {
                     current.push(item);
                     contours.push(current);
                     current = Vec::new();
@@ -888,9 +800,9 @@ impl InnerSvgPath {
     /// Reverse the contours
     #[allow(clippy::too_many_lines)]
     fn reverse_contour(
-        contour: &[PathSegment],
+        contour: &[GalagoPathSegment],
         carry_point: (f64, f64),
-    ) -> (Vec<PathSegment>, (f64, f64)) {
+    ) -> (Vec<GalagoPathSegment>, (f64, f64)) {
         if contour.is_empty() {
             return (vec![], carry_point);
         }
@@ -906,33 +818,33 @@ impl InnerSvgPath {
 
         for item in contour {
             match *item {
-                PathSegment::MoveTo { x, y, .. } => {
+                GalagoPathSegment::MoveTo { x, y, .. } => {
                     start = (x, y);
                     cur = start;
                     forward_ctrl2.push(None);
                 }
-                PathSegment::LineTo { x, y, .. }
-                | PathSegment::Quadratic { x, y, .. }
-                | PathSegment::SmoothQuadratic { x, y, .. }
-                | PathSegment::EllipticalArc { x, y, .. } => {
+                GalagoPathSegment::LineTo { x, y, .. }
+                | GalagoPathSegment::Quadratic { x, y, .. }
+                | GalagoPathSegment::SmoothQuadratic { x, y, .. }
+                | GalagoPathSegment::EllipticalArc { x, y, .. } => {
                     cur = (x, y);
                     forward_ctrl2.push(None);
                 }
-                PathSegment::CurveTo { x, y, x2, y2, .. }
-                | PathSegment::SmoothCurveTo { x, y, x2, y2, .. } => {
+                GalagoPathSegment::CurveTo { x, y, x2, y2, .. }
+                | GalagoPathSegment::SmoothCurveTo { x, y, x2, y2, .. } => {
                     cur = (x, y);
                     forward_ctrl2.push(Some((x2, y2)));
                 }
-                PathSegment::HorizontalLineTo { x, .. } => {
+                GalagoPathSegment::HorizontalLineTo { x, .. } => {
                     cur.0 = x;
                     forward_ctrl2.push(None);
                 }
-                PathSegment::VerticalLineTo { y, .. } => {
+                GalagoPathSegment::VerticalLineTo { y, .. } => {
                     cur.1 = y;
                     forward_ctrl2.push(None);
                 }
 
-                PathSegment::ClosePath { .. } => {
+                GalagoPathSegment::ClosePath { .. } => {
                     cur = start;
                     forward_ctrl2.push(None);
                 }
@@ -941,7 +853,7 @@ impl InnerSvgPath {
             pts.push(cur);
         }
 
-        let closed = matches!(contour.last(), Some(PathSegment::ClosePath { .. }));
+        let closed = matches!(contour.last(), Some(GalagoPathSegment::ClosePath { .. }));
 
         // pts[0] = contour start (carried-in or from this contour's own MoveTo)
         // pts[k] = point after contour[k-1] runs, for k = 1..=contour.len()
@@ -958,7 +870,7 @@ impl InnerSvgPath {
         // -------------------------
         // 2. start reversed path
         // -------------------------
-        out.push(PathSegment::MoveTo {
+        out.push(GalagoPathSegment::MoveTo {
             abs: true,
             x: pts[last_idx].0,
             y: pts[last_idx].1,
@@ -974,18 +886,18 @@ impl InnerSvgPath {
             let seg_end = pts[i + 1]; // forward end of contour[i] == prev in old code
 
             match contour[i] {
-                PathSegment::LineTo { .. }
-                | PathSegment::HorizontalLineTo { .. }
-                | PathSegment::VerticalLineTo { .. } => {
-                    out.push(PathSegment::LineTo {
+                GalagoPathSegment::LineTo { .. }
+                | GalagoPathSegment::HorizontalLineTo { .. }
+                | GalagoPathSegment::VerticalLineTo { .. } => {
+                    out.push(GalagoPathSegment::LineTo {
                         abs: true,
                         x: seg_start.0,
                         y: seg_start.1,
                     });
                 }
 
-                PathSegment::CurveTo { x1, y1, x2, y2, .. } => {
-                    out.push(PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo { x1, y1, x2, y2, .. } => {
+                    out.push(GalagoPathSegment::CurveTo {
                         abs: true,
                         x1: x2,
                         y1: y2,
@@ -996,13 +908,13 @@ impl InnerSvgPath {
                     });
                 }
 
-                PathSegment::SmoothCurveTo { x2, y2, .. } => {
+                GalagoPathSegment::SmoothCurveTo { x2, y2, .. } => {
                     let prev_ctrl2 = forward_ctrl2[i].unwrap_or(seg_start);
 
                     let rx = 2.0 * seg_start.0 - prev_ctrl2.0;
                     let ry = 2.0 * seg_start.1 - prev_ctrl2.1;
 
-                    out.push(PathSegment::CurveTo {
+                    out.push(GalagoPathSegment::CurveTo {
                         abs: true,
                         x1: x2,
                         y1: y2,
@@ -1013,8 +925,8 @@ impl InnerSvgPath {
                     });
                 }
 
-                PathSegment::Quadratic { x1, y1, .. } => {
-                    out.push(PathSegment::Quadratic {
+                GalagoPathSegment::Quadratic { x1, y1, .. } => {
+                    out.push(GalagoPathSegment::Quadratic {
                         abs: true,
                         x1,
                         y1,
@@ -1023,7 +935,7 @@ impl InnerSvgPath {
                     });
                 }
 
-                PathSegment::EllipticalArc {
+                GalagoPathSegment::EllipticalArc {
                     rx,
                     ry,
                     x_axis_rotation,
@@ -1031,7 +943,7 @@ impl InnerSvgPath {
                     sweep,
                     ..
                 } => {
-                    out.push(PathSegment::EllipticalArc {
+                    out.push(GalagoPathSegment::EllipticalArc {
                         abs: true,
                         rx,
                         ry,
@@ -1050,7 +962,7 @@ impl InnerSvgPath {
         }
 
         if closed {
-            out.push(PathSegment::ClosePath { abs: true });
+            out.push(GalagoPathSegment::ClosePath { abs: true });
         }
 
         (out, forward_end_point)
@@ -1061,7 +973,7 @@ impl Display for InnerSvgPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let mut result = String::new();
         for item in &self.items {
-            let segment_str = &to_string_path_segment(item);
+            let segment_str = &item.to_string();
             if !segment_str.is_empty() {
                 result.push_str(segment_str);
             }

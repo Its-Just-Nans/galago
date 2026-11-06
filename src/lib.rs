@@ -25,6 +25,7 @@ mod central_panel;
 mod document;
 mod editor;
 pub mod path;
+mod path_segment;
 mod settings;
 mod string_viewer;
 mod svg_render;

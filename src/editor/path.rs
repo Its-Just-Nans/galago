@@ -8,15 +8,13 @@ use bladvak::{
     },
 };
 use resvg::usvg::roxmltree::Node;
-use svgtypes::PathSegment;
 
-use crate::path::InnerSvgPath;
+use crate::{path::InnerSvgPath, path_segment::GalagoPathSegment};
 
 /// Svg path
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub(crate) struct SvgPath {
     /// inner path
-    #[serde(skip)]
     d: InnerSvgPath,
     /// bounding box
     bounding_box: Rect,
@@ -78,7 +76,7 @@ impl SvgPath {
         #[allow(clippy::cast_possible_truncation)]
         for one_point in &mut self.d.items {
             match one_point {
-                PathSegment::MoveTo { abs, x, y } => {
+                GalagoPathSegment::MoveTo { abs, x, y } => {
                     let (x, y) = (*x as f32, *y as f32);
                     let (current_x, current_y) = if *abs { (x, y) } else { (p.x + x, p.y + y) };
                     p = Pos2::new(current_x, current_y);
@@ -103,7 +101,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        *one_point = PathSegment::MoveTo {
+                        *one_point = GalagoPathSegment::MoveTo {
                             abs: true,
                             x: f64::from(new_pos.x),
                             y: f64::from(new_pos.y),
@@ -114,7 +112,7 @@ impl SvgPath {
                         }
                     }
                 }
-                PathSegment::LineTo { abs, x, y } => {
+                GalagoPathSegment::LineTo { abs, x, y } => {
                     let start = p;
                     let (x, y) = (*x as f32, *y as f32);
                     let (end_x, end_y) = if *abs { (x, y) } else { (p.x + x, p.y + y) };
@@ -139,7 +137,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        *one_point = PathSegment::LineTo {
+                        *one_point = GalagoPathSegment::LineTo {
                             abs: true,
                             x: f64::from(new_pos.x),
                             y: f64::from(new_pos.y),
@@ -150,7 +148,7 @@ impl SvgPath {
                         }
                     }
                 }
-                PathSegment::HorizontalLineTo { abs, x } => {
+                GalagoPathSegment::HorizontalLineTo { abs, x } => {
                     let start = p;
                     let x = *x as f32;
                     let (end_x, end_y) = if *abs { (x, p.y) } else { (p.x + x, p.y) };
@@ -175,7 +173,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        *one_point = PathSegment::HorizontalLineTo {
+                        *one_point = GalagoPathSegment::HorizontalLineTo {
                             abs: true,
                             x: f64::from(new_pos.x),
                         };
@@ -185,7 +183,7 @@ impl SvgPath {
                         }
                     }
                 }
-                PathSegment::VerticalLineTo { abs, y } => {
+                GalagoPathSegment::VerticalLineTo { abs, y } => {
                     let start = p;
                     let y = *y as f32;
                     let (end_x, end_y) = if *abs { (p.x, y) } else { (p.x, p.y + y) };
@@ -210,7 +208,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = p + resp.drag_delta();
-                        *one_point = PathSegment::VerticalLineTo {
+                        *one_point = GalagoPathSegment::VerticalLineTo {
                             abs: true,
                             y: f64::from(new_pos.y),
                         };
@@ -220,7 +218,7 @@ impl SvgPath {
                         }
                     }
                 }
-                PathSegment::Quadratic { abs, x1, y1, x, y } => {
+                GalagoPathSegment::Quadratic { abs, x1, y1, x, y } => {
                     let start = p;
                     let (x1, y1) = (*x1 as f32, *y1 as f32);
                     let middle = if *abs {
@@ -265,7 +263,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = middle + resp.drag_delta();
-                        *one_point = PathSegment::Quadratic {
+                        *one_point = GalagoPathSegment::Quadratic {
                             abs: true,
                             x1: f64::from(new_pos.x),
                             y1: f64::from(new_pos.y),
@@ -297,7 +295,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = end + resp.drag_delta();
-                        *one_point = PathSegment::Quadratic {
+                        *one_point = GalagoPathSegment::Quadratic {
                             abs: true,
                             x1: f64::from(x1),
                             y1: f64::from(y1),
@@ -310,7 +308,7 @@ impl SvgPath {
                         }
                     }
                 }
-                PathSegment::SmoothQuadratic { abs, x, y } => {
+                GalagoPathSegment::SmoothQuadratic { abs, x, y } => {
                     let start = p;
                     let middle = Pos2::new(2.0 * p.x - last_control.x, 2.0 * p.y - last_control.y);
 
@@ -351,7 +349,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = end + resp.drag_delta();
-                        *one_point = PathSegment::SmoothQuadratic {
+                        *one_point = GalagoPathSegment::SmoothQuadratic {
                             abs: true,
                             x: f64::from(new_pos.x),
                             y: f64::from(new_pos.y),
@@ -363,7 +361,7 @@ impl SvgPath {
                     }
                 }
 
-                PathSegment::CurveTo {
+                GalagoPathSegment::CurveTo {
                     abs,
                     x1,
                     y1,
@@ -421,7 +419,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = middle1 + resp.drag_delta();
-                        *one_point = PathSegment::CurveTo {
+                        *one_point = GalagoPathSegment::CurveTo {
                             abs: true,
                             x1: f64::from(new_pos.x),
                             y1: f64::from(new_pos.y),
@@ -456,7 +454,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = middle2 + resp.drag_delta();
-                        *one_point = PathSegment::CurveTo {
+                        *one_point = GalagoPathSegment::CurveTo {
                             abs: true,
                             x1: f64::from(x1),
                             y1: f64::from(y1),
@@ -490,7 +488,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = end + resp.drag_delta();
-                        *one_point = PathSegment::CurveTo {
+                        *one_point = GalagoPathSegment::CurveTo {
                             abs: true,
                             x1: f64::from(x1),
                             y1: f64::from(y1),
@@ -505,7 +503,7 @@ impl SvgPath {
                         }
                     }
                 }
-                PathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
+                GalagoPathSegment::SmoothCurveTo { abs, x2, y2, x, y } => {
                     let start = p;
                     let middle1 = Pos2::new(2.0 * p.x - last_control.x, 2.0 * p.y - last_control.y);
                     let (x2, y2) = (*x2 as f32, *y2 as f32);
@@ -549,7 +547,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = middle2 + resp.drag_delta();
-                        *one_point = PathSegment::SmoothCurveTo {
+                        *one_point = GalagoPathSegment::SmoothCurveTo {
                             abs: true,
                             x2: f64::from(new_pos.x),
                             y2: f64::from(new_pos.y),
@@ -581,7 +579,7 @@ impl SvgPath {
                         && zone.contains(pos)
                     {
                         let new_pos = end + resp.drag_delta();
-                        *one_point = PathSegment::SmoothCurveTo {
+                        *one_point = GalagoPathSegment::SmoothCurveTo {
                             abs: true,
                             x2: f64::from(x2),
                             y2: f64::from(y2),
@@ -594,11 +592,11 @@ impl SvgPath {
                         }
                     }
                 }
-                PathSegment::ClosePath { abs: _ } => {
+                GalagoPathSegment::ClosePath { abs: _ } => {
                     ui.painter()
                         .line_segment([last_m, p], Stroke::new(1.0, Color32::BLACK));
                 }
-                PathSegment::EllipticalArc {
+                GalagoPathSegment::EllipticalArc {
                     abs,
                     rx,
                     ry,

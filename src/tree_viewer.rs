@@ -5,14 +5,14 @@ use bladvak::app::BladvakPanel;
 use bladvak::eframe::egui::{self, Color32, Frame, Window};
 use bladvak::egui_extras::{Column, TableBuilder};
 use std::collections::HashMap;
-use svgtypes::PathSegment;
 use xmltree::{AttributeMap, Element, EmitterConfig};
 
 use crate::GalagoApp;
 use crate::path::{
     InnerSvgPath, circle_to_path, ellipse_to_path, line_to_path, polygon_to_path, polyline_to_path,
-    rect_to_path, to_string_path_segment,
+    rect_to_path,
 };
+use crate::path_segment::GalagoPathSegment;
 
 /// `TreeViewer` Struct
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -486,11 +486,11 @@ impl TreeViewer {
                                     if ui.button(letter.to_string()).clicked() {
                                         idx_to_update = Some(idx);
                                     }
-                                    if let PathSegment::ClosePath { abs: _ } = path_segment {
+                                    if let GalagoPathSegment::ClosePath { abs: _ } = path_segment {
                                         // ClosePath don't have numbers
                                         return;
                                     }
-                                    let curr_value = to_string_path_segment(path_segment);
+                                    let curr_value = path_segment.to_string();
 
                                     if self.edit_path_as_input {
                                         // remove first character from the value

@@ -86,7 +86,7 @@ impl SvgPolygon {
         if resp.hovered() {
             for one_point in &mut *self.points {
                 let rect = Rect::from_center_size(*one_point, Vec2::splat(size_point));
-                let zone = rect.expand(15.0);
+                let zone = rect.expand(1.0);
 
                 if is_debug {
                     ui.painter().debug_rect(zone, Color32::YELLOW, "point");

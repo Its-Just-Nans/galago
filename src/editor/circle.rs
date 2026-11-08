@@ -79,7 +79,7 @@ impl SvgCircle {
         );
         let resp = ui.interact(
             zone,
-            ui.id().with(("offset_circle", idx)),
+            ui.scope_id().with(("offset_circle", idx)),
             egui::Sense::click_and_drag(),
         );
         let center = Pos2::new(self.cx, self.cy);

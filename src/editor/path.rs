@@ -61,7 +61,7 @@ impl SvgPath {
         let bounding = self.bounding_box.expand(size_point);
         let resp = ui.interact(
             bounding,
-            ui.id().with(("path", "interact", idx)),
+            ui.scope_id().with(("path", "interact", idx)),
             egui::Sense::click_and_drag(),
         );
         if is_debug {

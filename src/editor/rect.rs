@@ -115,7 +115,7 @@ impl SvgRect {
         // painter.debug_rect(zone, Color32::RED, "interact");
         let resp = ui.interact(
             zone,
-            ui.id().with(("offset_rect", idx)),
+            ui.scope_id().with(("offset_rect", idx)),
             egui::Sense::click_and_drag(),
         );
         let painter = ui.painter();

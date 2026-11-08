@@ -9,8 +9,8 @@ use bladvak::{
     utils::grid::Grid,
 };
 use egui::{
-    Color32, Context, CornerRadius, ImageData, ImageFit, ImageSize, Rect, Sense, TextureHandle,
-    TextureOptions, Vec2, WidgetInfo, WidgetType, pos2,
+    Color32, Context, CornerRadius, ImageData, ImageFit, ImageSize, Rect, Role, Sense,
+    TextureHandle, TextureOptions, Vec2, WidgetInfo, pos2,
 };
 use resvg::tiny_skia::Pixmap;
 
@@ -78,7 +78,7 @@ impl SvgRender {
             );
             let (rect, response) = ui.allocate_exact_size(ui_size, Sense::click());
             response.widget_info(|| {
-                let mut info = WidgetInfo::new(WidgetType::Image);
+                let mut info = WidgetInfo::new(Role::Image);
                 info.label = Some("rendered svg".to_string());
                 info
             });

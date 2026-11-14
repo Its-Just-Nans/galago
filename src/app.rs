@@ -165,7 +165,11 @@ impl BladvakApp<'_> for GalagoApp {
         self.app_central_panel(ui, error_manager);
     }
 
-    fn handle_file(&mut self, file: File, _error_manager: &mut bladvak::ErrorManager) -> Result<(), AppError> {
+    fn handle_file(
+        &mut self,
+        file: File,
+        _error_manager: &mut bladvak::ErrorManager,
+    ) -> Result<(), AppError> {
         let most_likely_font = file
             .path
             .extension()

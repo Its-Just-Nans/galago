@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use bladvak::{
     AppError, ErrorManager,
-    app::BladvakPanel,
+    app::{BladvakPanel, PanelState},
     eframe::{egui, epaint::RectShape},
     log,
     utils::grid::Grid,
@@ -245,14 +245,23 @@ impl GalagoApp {
 }
 
 /// Svg viewer and grid setting
-#[derive(Debug)]
-pub struct SvgViewerPanel;
+#[derive(Default, Debug)]
+pub struct SvgViewerPanel {
+    /// state
+    state: PanelState,
+}
 
 impl BladvakPanel for SvgViewerPanel {
     type App = GalagoApp;
 
     fn name(&self) -> &'static str {
         "SVG viewer"
+    }
+    fn state(&self) -> &PanelState {
+        &self.state
+    }
+    fn state_mut(&mut self) -> &mut PanelState {
+        &mut self.state
     }
 
     fn has_settings(&self) -> bool {

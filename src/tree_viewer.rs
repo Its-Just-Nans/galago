@@ -1,7 +1,7 @@
 //! Tree Viewer
 
 use bladvak::ErrorManager;
-use bladvak::app::BladvakPanel;
+use bladvak::app::{BladvakPanel, PanelState};
 use bladvak::eframe::egui::{self, Color32, Frame, Window};
 use bladvak::egui_extras::{Column, TableBuilder};
 use std::collections::HashMap;
@@ -611,14 +611,23 @@ impl TreeViewer {
 }
 
 /// Tree viewer panel
-#[derive(Debug)]
-pub struct TreeViewerPanel;
+#[derive(Default, Debug)]
+pub struct TreeViewerPanel {
+    /// state
+    state: PanelState,
+}
 
 impl BladvakPanel for TreeViewerPanel {
     type App = GalagoApp;
 
     fn name(&self) -> &'static str {
         "SVG tree"
+    }
+    fn state(&self) -> &bladvak::app::PanelState {
+        &self.state
+    }
+    fn state_mut(&mut self) -> &mut bladvak::app::PanelState {
+        &mut self.state
     }
 
     fn has_settings(&self) -> bool {

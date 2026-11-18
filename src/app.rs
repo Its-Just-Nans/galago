@@ -1,5 +1,6 @@
 //! Galago app
 
+use bladvak::app::BladvakPanel;
 use bladvak::eframe::egui::{self};
 use bladvak::utils::grid::Grid;
 use bladvak::utils::is_native;
@@ -92,10 +93,10 @@ impl GalagoApp {
 impl BladvakApp<'_> for GalagoApp {
     fn panel_list(&self) -> Vec<Box<dyn bladvak::app::BladvakPanel<App = Self>>> {
         vec![
-            Box::new(StringViewerPanel),
-            Box::new(TreeViewerPanel),
-            Box::new(SvgViewerPanel),
-            Box::new(ShapeEditorPanel),
+            Box::new(StringViewerPanel::default()),
+            Box::new(TreeViewerPanel::default()),
+            Box::new(SvgViewerPanel::default()),
+            Box::new(ShapeEditorPanel::default()),
         ]
     }
 
@@ -161,7 +162,12 @@ impl BladvakApp<'_> for GalagoApp {
         &include_bytes!("../assets/icon-256.png")[..]
     }
 
-    fn central_panel(&mut self, ui: &mut egui::Ui, error_manager: &mut bladvak::ErrorManager) {
+    fn central_panel(
+        &mut self,
+        ui: &mut egui::Ui,
+        error_manager: &mut bladvak::ErrorManager,
+        _panel_list: &mut [std::boxed::Box<dyn BladvakPanel<App = Self>>],
+    ) {
         self.app_central_panel(ui, error_manager);
     }
 
@@ -198,7 +204,10 @@ impl BladvakApp<'_> for GalagoApp {
     }
 
     /// Check if the sidebar is needed
-    fn is_side_panel(&self) -> bool {
+    fn is_side_panel(
+        &self,
+        _panel_list: &mut [std::boxed::Box<dyn BladvakPanel<App = Self>>],
+    ) -> bool {
         self.documents.is_some()
     }
 

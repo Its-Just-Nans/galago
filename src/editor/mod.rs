@@ -7,7 +7,7 @@ mod rect;
 
 use bladvak::{
     ErrorManager,
-    app::BladvakPanel,
+    app::{BladvakPanel, PanelState},
     eframe::egui::{self, CollapsingHeader, Color32, Pos2, ScrollArea},
 };
 
@@ -235,14 +235,23 @@ impl ShapeEditor {
 }
 
 /// Panel
-#[derive(Debug)]
-pub struct ShapeEditorPanel;
+#[derive(Default, Debug)]
+pub struct ShapeEditorPanel {
+    /// state
+    state: PanelState,
+}
 
 impl BladvakPanel for ShapeEditorPanel {
     type App = GalagoApp;
 
     fn name(&self) -> &'static str {
         "Shape editor"
+    }
+    fn state(&self) -> &PanelState {
+        &self.state
+    }
+    fn state_mut(&mut self) -> &mut PanelState {
+        &mut self.state
     }
 
     fn has_settings(&self) -> bool {

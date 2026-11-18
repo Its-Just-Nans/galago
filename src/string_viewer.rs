@@ -1,6 +1,6 @@
 //! String Viewer
 
-use bladvak::app::BladvakPanel;
+use bladvak::app::{BladvakPanel, PanelState};
 use bladvak::eframe::egui::{self, Color32, Frame};
 use bladvak::egui_extras::syntax_highlighting::CodeTheme;
 use bladvak::{AppError, ErrorManager, egui_extras};
@@ -32,14 +32,23 @@ impl Default for StringViewer {
 }
 
 /// String viewer panel
-#[derive(Debug)]
-pub struct StringViewerPanel;
+#[derive(Default, Debug)]
+pub struct StringViewerPanel {
+    /// state
+    state: PanelState,
+}
 
 impl BladvakPanel for StringViewerPanel {
     type App = GalagoApp;
 
     fn name(&self) -> &'static str {
         "SVG String"
+    }
+    fn state(&self) -> &PanelState {
+        &self.state
+    }
+    fn state_mut(&mut self) -> &mut PanelState {
+        &mut self.state
     }
 
     fn has_settings(&self) -> bool {

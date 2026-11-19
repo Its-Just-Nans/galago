@@ -1,9 +1,11 @@
 //! SVG editor
 
 mod circle;
+mod line;
 mod path;
 mod polygon;
 mod rect;
+mod text;
 
 use bladvak::{
     ErrorManager,
@@ -11,7 +13,10 @@ use bladvak::{
     eframe::egui::{self, CollapsingHeader, Color32, Pos2, ScrollArea},
 };
 
-use crate::{GalagoApp, editor::polygon::SvgPolygon};
+use crate::{
+    GalagoApp,
+    editor::{line::SvgLine, polygon::SvgPolygon, text::SvgText},
+};
 use circle::SvgCircle;
 use path::SvgPath;
 use rect::SvgRect;
@@ -46,6 +51,10 @@ enum InnerShape {
     Polygon(SvgPolygon),
     /// circle
     Circle(SvgCircle),
+    /// line
+    Line(SvgLine),
+    /// text
+    Text(SvgText),
 }
 
 impl InnerShape {
@@ -65,6 +74,10 @@ impl InnerShape {
             Self::Circle(shape) => {
                 shape.show(ui, idx, size_point, error_manager);
             }
+            Self::Line(_) => {}
+            Self::Text(_shape) => {
+                // ui.label("TEXT"); // TODO
+            }
         }
     }
     /// name
@@ -74,6 +87,8 @@ impl InnerShape {
             Self::Path(_) => "path",
             Self::Polygon(_) => "polygon",
             Self::Circle(_) => "circle",
+            Self::Line(_) => "line",
+            Self::Text(_) => "text",
         }
     }
 }
@@ -134,9 +149,34 @@ fn recursive_add(
                     error_manager.add_error(err);
                 }
             },
+            "line" => match SvgLine::try_parse(one_node) {
+                Ok(s) => {
+                    let shape = Shape {
+                        inner: InnerShape::Line(s),
+                        is_visible: true,
+                    };
+                    rects.push(shape);
+                }
+                Err(err) => {
+                    error_manager.add_error(err);
+                }
+            },
             "g" | "svg" => {
                 recursive_add(rects, &one_node, error_manager);
             }
+            "text" => match SvgText::try_parse(one_node) {
+                Ok(s) => {
+                    let shape = Shape {
+                        inner: InnerShape::Text(s),
+                        is_visible: true,
+                    };
+                    rects.push(shape);
+                }
+                Err(err) => {
+                    error_manager.add_error(err);
+                }
+            },
+            "defs" | "use" => {}
             s => {
                 error_manager.add_error(format!(
                     "Cannot transform '{s}' ({one_node:?}): unimplemented"

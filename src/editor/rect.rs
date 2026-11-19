@@ -58,12 +58,12 @@ impl SvgRect {
     pub(crate) fn try_parse(node: Node<'_, '_>) -> Result<Self, String> {
         let x = node
             .attribute("x")
-            .ok_or("Cannot get x property")?
+            .unwrap_or("0")
             .parse()
             .map_err(|_e| "Cannot parse x property")?;
         let y = node
             .attribute("y")
-            .ok_or("Cannot get y property")?
+            .unwrap_or("0")
             .parse()
             .map_err(|_e| "Cannot parse y property")?;
         let width = node

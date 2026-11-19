@@ -165,19 +165,7 @@ impl GalagoApp {
             },
         );
         if ui.button("Load font from egui").clicked() {
-            ui.ctx().fonts_mut(|r| {
-                for (index, (font_name, font_data)) in r.definitions().font_data.iter().enumerate()
-                {
-                    if index == 0 {
-                        self.usvg_options.font_family.clone_from(font_name);
-                        self.options_edit.1.clone_from(font_name);
-                    }
-                    self.usvg_options.fontdb_mut().load_font_source(
-                        resvg::usvg::fontdb::Source::Binary(font_data.font.clone()),
-                    );
-                }
-            });
-            self.stale_all();
+            self.load_font_from_egui(ui.ctx());
         }
         ui.collapsing("usvg_options", |ui| {
             ui.horizontal(|ui| {
@@ -202,6 +190,22 @@ impl GalagoApp {
                 }
             });
         });
+    }
+
+    /// load fonts from egui
+    pub(crate) fn load_font_from_egui(&mut self, ctx: &egui::Context) {
+        ctx.fonts_mut(|r| {
+            for (index, (font_name, font_data)) in r.definitions().font_data.iter().enumerate() {
+                if index == 0 {
+                    self.usvg_options.font_family.clone_from(font_name);
+                    self.options_edit.1.clone_from(font_name);
+                }
+                self.usvg_options
+                    .fontdb_mut()
+                    .load_font_source(resvg::usvg::fontdb::Source::Binary(font_data.font.clone()));
+            }
+        });
+        self.stale_all();
     }
 
     /// State all

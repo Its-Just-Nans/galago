@@ -60,3 +60,10 @@ impl DocumentTrait for Document {
         self.clone()
     }
 }
+
+impl Document {
+    /// Stale the render of a document
+    pub(crate) fn stale_render(&mut self) {
+        self.svg_render.stale_render();
+    }
+}

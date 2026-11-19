@@ -34,6 +34,8 @@ pub struct GalagoApp {
     /// usvg options
     #[serde(skip)]
     pub(crate) usvg_options: usvg::Options<'static>,
+    /// usvg options edition
+    pub(crate) options_edit: (f32, String),
 }
 
 impl Default for GalagoApp {
@@ -42,6 +44,7 @@ impl Default for GalagoApp {
         // sadly, no wasm support
         // see https://github.com/RazrFalcon/fontdb/issues/83
         // or maybe do https://github.com/RazrFalcon/fontdb/issues/83#issuecomment-3677330841
+        let options_edit = (usvg_options.font_size, usvg_options.font_family.clone());
         usvg_options.fontdb_mut().load_system_fonts();
         let mut documents = Documents::default();
         documents.push(Self::default_document());
@@ -52,6 +55,7 @@ impl Default for GalagoApp {
             string_viewer: StringViewer::default(),
             grid: Grid::default(),
             usvg_options,
+            options_edit,
         }
     }
 }

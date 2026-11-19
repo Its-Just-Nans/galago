@@ -164,6 +164,51 @@ impl GalagoApp {
                     });
             },
         );
+        if ui.button("Load font from egui").clicked() {
+            ui.ctx().fonts_mut(|r| {
+                for (index, (font_name, font_data)) in r.definitions().font_data.iter().enumerate()
+                {
+                    if index == 0 {
+                        self.usvg_options.font_family.clone_from(font_name);
+                        self.options_edit.1.clone_from(font_name);
+                    }
+                    self.usvg_options.fontdb_mut().load_font_source(
+                        resvg::usvg::fontdb::Source::Binary(font_data.font.clone()),
+                    );
+                }
+            });
+            self.stale_all();
+        }
+        ui.collapsing("usvg_options", |ui| {
+            ui.horizontal(|ui| {
+                ui.label("Fallback font");
+                ui.label(&self.usvg_options.font_family);
+                ui.label(format!("{}", self.usvg_options.font_size));
+            });
+            ui.horizontal(|ui| {
+                ui.text_edit_singleline(&mut self.options_edit.1);
+                if ui.button("Apply").clicked() {
+                    self.usvg_options
+                        .font_family
+                        .clone_from(&self.options_edit.1);
+                    self.stale_all();
+                }
+            });
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut self.options_edit.0).range(1..=50));
+                if ui.button("Apply").clicked() {
+                    self.usvg_options.font_size = self.options_edit.0;
+                    self.stale_all();
+                }
+            });
+        });
+    }
+
+    /// State all
+    pub(crate) fn stale_all(&mut self) {
+        for one_doc in &mut self.documents {
+            one_doc.stale_render();
+        }
     }
 
     /// Update the svg

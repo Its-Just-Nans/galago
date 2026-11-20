@@ -74,7 +74,9 @@ impl InnerShape {
             Self::Circle(shape) => {
                 shape.show(ui, idx, size_point, error_manager);
             }
-            Self::Line(_) => {}
+            Self::Line(shape) => {
+                shape.show(ui, idx, size_point, error_manager);
+            }
             Self::Text(_shape) => {
                 // ui.label("TEXT"); // TODO
             }

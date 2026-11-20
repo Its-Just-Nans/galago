@@ -67,13 +67,7 @@ impl SvgLine {
             egui::Sense::click_and_drag(),
         );
         let painter = ui.painter();
-        painter.line_segment(
-            [p1, p2],
-            Stroke {
-                color: Color32::RED,
-                width: 10.0,
-            },
-        );
+        painter.line_segment([p1, p2], Stroke::new(1.0, Color32::RED));
         if resp.dragged() || resp.hovered() {
             let rect_p1 = Rect::from_center_size(p1, Vec2::splat(size_point));
             painter.rect_filled(rect_p1, 1.0, Color32::WHITE);

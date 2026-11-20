@@ -21,6 +21,9 @@ use circle::SvgCircle;
 use path::SvgPath;
 use rect::SvgRect;
 
+/// Debug color
+pub(crate) const COLOR_DEBUG: Color32 = Color32::YELLOW;
+
 /// Data
 #[derive(serde::Deserialize, serde::Serialize, Default, Debug, Clone)]
 pub struct ShapeEditor {

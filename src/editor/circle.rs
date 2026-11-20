@@ -6,7 +6,7 @@ use bladvak::{
 };
 use resvg::usvg::roxmltree::Node;
 
-use crate::editor::DEFAULT_COLOR;
+use crate::editor::{COLOR_DEBUG, DEFAULT_COLOR};
 
 /// svg circle
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -68,15 +68,18 @@ impl SvgCircle {
         ui: &mut egui::Ui,
         idx: usize,
         size_point: f32,
-        _error_manager: &mut ErrorManager,
+        error_manager: &mut ErrorManager,
     ) {
         let margin_size = 10.0;
         let min = Pos2::new(self.cx - self.r, self.cy - self.r);
         let max = Pos2::new(self.cx + self.r, self.cy + self.r);
         let zone = Rect::from_min_max(
-            min - Vec2::new(margin_size, margin_size),
-            max + Vec2::new(margin_size, margin_size),
+            min - Vec2::new(size_point, size_point),
+            max + Vec2::new(size_point, size_point),
         );
+        if error_manager.is_debug() {
+            ui.painter().debug_rect(zone, COLOR_DEBUG, "circle");
+        }
         let resp = ui.interact(
             zone,
             ui.scope_id().with(("offset_circle", idx)),

@@ -6,6 +6,8 @@ use bladvak::{
 };
 use resvg::usvg::roxmltree::Node;
 
+use crate::editor::COLOR_DEBUG;
+
 /// svg line
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub(crate) struct SvgLine {
@@ -58,8 +60,7 @@ impl SvgLine {
         let zone = Rect::from_two_pos(p1, p2);
         let zone_inter = zone.expand(size_point);
         if error_manager.is_debug() {
-            ui.painter()
-                .debug_rect(zone_inter, Color32::RED, "interact");
+            ui.painter().debug_rect(zone_inter, COLOR_DEBUG, "line");
         }
         let resp = ui.interact(
             zone_inter,

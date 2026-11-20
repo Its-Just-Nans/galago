@@ -6,7 +6,7 @@ use bladvak::{
 };
 use resvg::usvg::roxmltree::Node;
 
-use crate::editor::DEFAULT_COLOR;
+use crate::editor::{COLOR_DEBUG, DEFAULT_COLOR};
 
 /// svg rect
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -112,7 +112,9 @@ impl SvgRect {
             min - Vec2::new(margin_size, margin_size),
             max + Vec2::new(margin_size, margin_size),
         );
-        // painter.debug_rect(zone, Color32::RED, "interact");
+        if error_manager.is_debug() {
+            ui.painter().debug_rect(zone, COLOR_DEBUG, "rect");
+        }
         let resp = ui.interact(
             zone,
             ui.scope_id().with(("offset_rect", idx)),
@@ -161,7 +163,7 @@ impl SvgRect {
                     zone.min,
                     rect.min + Vec2::new(corner_length_width, corner_length_height),
                 );
-                painter.debug_rect(corner_top_left, Color32::YELLOW, "nw");
+                painter.debug_rect(corner_top_left, COLOR_DEBUG, "nw");
                 let corner_top_right = Rect::from_min_max(
                     Pos2::new(rect.max.x - corner_length_width, zone.min.y),
                     Pos2::new(zone.max.x, rect.min.y + corner_length_height),

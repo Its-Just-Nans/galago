@@ -6,7 +6,7 @@ use bladvak::{
 };
 use resvg::usvg::roxmltree::Node;
 
-use crate::editor::path::bounding_box;
+use crate::editor::{COLOR_DEBUG, path::bounding_box};
 
 /// Polygon
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -79,26 +79,21 @@ impl SvgPolygon {
             egui::Sense::click_and_drag(),
         );
         if is_debug {
-            ui.painter().debug_rect(bounding, Color32::YELLOW, "shape");
+            ui.painter().debug_rect(bounding, COLOR_DEBUG, "polygon");
         }
         ui.painter().add(self.shape.clone());
         let mut moved = false;
         if resp.hovered() {
             for one_point in &mut *self.points {
                 let rect = Rect::from_center_size(*one_point, Vec2::splat(size_point));
-                let zone = rect.expand(1.0);
+                let zone = rect.expand(size_point);
 
                 if is_debug {
-                    ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                    ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                 }
                 let painter = ui.painter();
-                painter.rect(
-                    rect,
-                    0.0,
-                    Color32::WHITE,
-                    Stroke::default(),
-                    egui::StrokeKind::Middle,
-                );
+                painter.rect_filled(rect, 1.0, Color32::WHITE);
+
                 if resp.dragged()
                     && let Some(pos) = resp.interact_pointer_pos()
                     && zone.contains(pos)

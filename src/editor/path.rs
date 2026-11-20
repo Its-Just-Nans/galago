@@ -9,7 +9,7 @@ use bladvak::{
 };
 use resvg::usvg::roxmltree::Node;
 
-use crate::{path::InnerSvgPath, path_segment::GalagoPathSegment};
+use crate::{editor::COLOR_DEBUG, path::InnerSvgPath, path_segment::GalagoPathSegment};
 
 /// Svg path
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
@@ -65,7 +65,7 @@ impl SvgPath {
             egui::Sense::click_and_drag(),
         );
         if is_debug {
-            ui.painter().debug_rect(bounding, Color32::YELLOW, "shape");
+            ui.painter().debug_rect(bounding, COLOR_DEBUG, "path");
         }
         let mut p = Pos2::new(0.0, 0.0);
         let mut last_control = Pos2::new(0.0, 0.0);
@@ -84,7 +84,7 @@ impl SvgPath {
                     let rect = Rect::from_center_size(p, Vec2::splat(size_point));
                     let zone = rect.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect,
@@ -123,7 +123,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(p, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,
@@ -159,7 +159,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(p, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,
@@ -194,7 +194,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(p, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,
@@ -244,7 +244,7 @@ impl SvgPath {
                     let rect_middle = Rect::from_center_size(middle, Vec2::splat(size_point));
                     let zone = rect_middle.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().circle(
                         middle,
@@ -279,7 +279,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(end, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,
@@ -333,7 +333,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(end, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,
@@ -400,7 +400,7 @@ impl SvgPath {
                     let rect_middle = Rect::from_center_size(middle1, Vec2::splat(size_point));
                     let zone = rect_middle.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().circle(
                         middle1,
@@ -437,7 +437,7 @@ impl SvgPath {
                     let rect_middle = Rect::from_center_size(middle2, Vec2::splat(size_point));
                     let zone = rect_middle.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().circle(
                         middle2,
@@ -472,7 +472,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(end, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,
@@ -530,7 +530,7 @@ impl SvgPath {
                     let rect_middle = Rect::from_center_size(middle2, Vec2::splat(size_point));
                     let zone = rect_middle.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().circle(
                         middle2,
@@ -563,7 +563,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(end, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,
@@ -654,7 +654,7 @@ impl SvgPath {
                                 Rect::from_center_size(center, Vec2::splat(size_point));
                             let zone = rect_center.expand(detection_zone);
                             if is_debug {
-                                ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                                ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                             }
                             ui.painter().circle(
                                 center,
@@ -675,7 +675,7 @@ impl SvgPath {
                     let rect_end = Rect::from_center_size(end, Vec2::splat(size_point));
                     let zone = rect_end.expand(detection_zone);
                     if is_debug {
-                        ui.painter().debug_rect(zone, Color32::YELLOW, "point");
+                        ui.painter().debug_rect(zone, COLOR_DEBUG, "point");
                     }
                     ui.painter().rect(
                         rect_end,

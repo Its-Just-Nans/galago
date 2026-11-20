@@ -45,7 +45,7 @@ impl SvgLine {
         Ok(Self { x1, y1, x2, y2 })
     }
 
-    /// show the ndoe
+    /// show the node
     pub(crate) fn show(
         &mut self,
         ui: &mut egui::Ui,

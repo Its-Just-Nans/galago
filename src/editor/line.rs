@@ -28,22 +28,22 @@ impl SvgLine {
             .attribute("x1")
             .unwrap_or("0")
             .parse()
-            .map_err(|_e| "Cannot parse x property")?;
+            .map_err(|_e| "Cannot parse x1 property")?;
         let y1 = node
             .attribute("y1")
             .unwrap_or("0")
             .parse()
-            .map_err(|_e| "Cannot parse y property")?;
+            .map_err(|_e| "Cannot parse y1 property")?;
         let x2 = node
             .attribute("x2")
             .unwrap_or("0")
             .parse()
-            .map_err(|_e| "Cannot parse x property")?;
+            .map_err(|_e| "Cannot parse x2 property")?;
         let y2 = node
             .attribute("y2")
             .unwrap_or("0")
             .parse()
-            .map_err(|_e| "Cannot parse y property")?;
+            .map_err(|_e| "Cannot parse y2 property")?;
         Ok(Self { x1, y1, x2, y2 })
     }
 

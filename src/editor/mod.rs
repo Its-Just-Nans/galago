@@ -1,6 +1,7 @@
 //! SVG editor
 
 mod circle;
+mod ellipse;
 mod line;
 mod path;
 mod polygon;
@@ -18,6 +19,7 @@ use crate::{
     editor::{line::SvgLine, polygon::SvgPolygon, text::SvgText},
 };
 use circle::SvgCircle;
+use ellipse::SvgEllipse;
 use path::SvgPath;
 use rect::SvgRect;
 
@@ -54,6 +56,8 @@ enum InnerShape {
     Polygon(SvgPolygon),
     /// circle
     Circle(SvgCircle),
+    /// ellipse
+    Ellipse(SvgEllipse),
     /// line
     Line(SvgLine),
     /// text
@@ -77,6 +81,9 @@ impl InnerShape {
             Self::Circle(shape) => {
                 shape.show(ui, idx, size_point, error_manager);
             }
+            Self::Ellipse(shape) => {
+                shape.show(ui, idx, size_point, error_manager);
+            }
             Self::Line(shape) => {
                 shape.show(ui, idx, size_point, error_manager);
             }
@@ -92,6 +99,7 @@ impl InnerShape {
             Self::Path(_) => "path",
             Self::Polygon(_) => "polygon",
             Self::Circle(_) => "circle",
+            Self::Ellipse(_) => "ellipse",
             Self::Line(_) => "line",
             Self::Text(_) => "text",
         }
@@ -146,6 +154,18 @@ fn recursive_add(
                 Ok(s) => {
                     let shape = Shape {
                         inner: InnerShape::Circle(s),
+                        is_visible: true,
+                    };
+                    rects.push(shape);
+                }
+                Err(err) => {
+                    error_manager.add_error(err);
+                }
+            },
+            "ellipse" => match SvgEllipse::try_parse(one_node) {
+                Ok(s) => {
+                    let shape = Shape {
+                        inner: InnerShape::Ellipse(s),
                         is_visible: true,
                     };
                     rects.push(shape);
